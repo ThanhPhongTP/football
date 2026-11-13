@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useAdminAuth } from '@/context/AdminAuthContext';
-import { AttendancePoll, getGoogleMapsUrl } from '@/types/football';
+import { AttendancePoll, Match, getGoogleMapsUrl, PollVote } from '@/types/football';
 import {
   Calendar,
   Clock,
@@ -23,13 +24,31 @@ import {
 } from 'lucide-react';
 
 export default function PollsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <PollsContent />
+    </Suspense>
+  );
+}
+
+function PollsContent() {
+  const searchParams = useSearchParams();
+  const matchIdParam = searchParams.get('matchId');
   const { isAdmin, openPasswordModal } = useAdminAuth();
   const [polls, setPolls] = useState<AttendancePoll[]>([]);
+  const [availableMatches, setAvailableMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Modal create state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedMatchId, setSelectedMatchId] = useState<string>('');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00 - 21:30');
@@ -40,7 +59,7 @@ export default function PollsPage() {
   const [notes, setNotes] = useState('Anh em mang 2 áo Cam & Xanh, đến trước 15p khởi động!');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load polls from server
+  // Load polls and matches from server
   const fetchPolls = async () => {
     try {
       const res = await fetch('/api/polls');
@@ -55,12 +74,53 @@ export default function PollsPage() {
     }
   };
 
+  const fetchMatches = async () => {
+    try {
+      const res = await fetch('/api/matches');
+      if (res.ok) {
+        const data: Match[] = await res.json();
+        setAvailableMatches(data);
+        return data;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  };
+
+  const handleSelectMatch = (matchId: string, matchesList = availableMatches) => {
+    setSelectedMatchId(matchId);
+    if (!matchId) return;
+
+    const found = matchesList.find((m) => m.id === matchId);
+    if (found) {
+      setTitle(found.title);
+      if (found.date) setDate(found.date);
+      if (found.time) setTime(found.time);
+      if (found.venue) setVenue(found.venue);
+      if (found.venueMapUrl) setVenueMapUrl(found.venueMapUrl);
+      if (found.format) setFormat(found.format);
+      if (found.targetPlayers) setTargetPlayers(found.targetPlayers);
+      if (found.notes) setNotes(found.notes);
+    }
+  };
+
   useEffect(() => {
     fetchPolls();
+    fetchMatches().then((matches) => {
+      if (matchIdParam && Array.isArray(matches)) {
+        const found = matches.find((m) => m.id === matchIdParam);
+        if (found) {
+          handleSelectMatch(matchIdParam, matches);
+          setIsCreateOpen(true);
+        }
+      }
+    });
+
     const today = new Date();
     setDate(today.toISOString().split('T')[0]);
     setTitle(`Nội chiến Tuần ${getWeekNumber(today)} - FC Anh Em`);
-  }, []);
+  }, [matchIdParam]);
 
   const handleFormatChange = (newFormat: '5v5' | '7v7' | '11v11') => {
     setFormat(newFormat);
@@ -77,11 +137,29 @@ export default function PollsPage() {
     }
 
     setIsSubmitting(true);
+
+    const selectedMatch = availableMatches.find((m) => m.id === selectedMatchId);
+    let initialVotes: PollVote[] = [];
+    if (selectedMatch && Array.isArray(selectedMatch.players)) {
+      initialVotes = selectedMatch.players
+        .filter((p) => p.status === 'IN')
+        .map((p) => ({
+          id: `v_${p.id}`,
+          playerId: p.id,
+          playerName: p.name,
+          status: 'YES',
+          position: p.position,
+          rating: p.rating,
+          updatedAt: Date.now(),
+        }));
+    }
+
     try {
       const res = await fetch('/api/polls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          matchId: selectedMatchId || undefined,
           title: title.trim(),
           date,
           time: time.trim(),
@@ -90,6 +168,7 @@ export default function PollsPage() {
           format,
           targetPlayers,
           notes: notes.trim(),
+          votes: initialVotes,
         }),
       });
 
@@ -286,6 +365,18 @@ ${pollUrl}`;
                         />
                       </div>
                     </div>
+
+                    {/* Linked Match Room Link */}
+                    {poll.matchId && (
+                      <div className="mt-3 pt-2.5 border-t border-zinc-800/60">
+                        <Link
+                          href={`/match/${poll.matchId}`}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-xl border border-emerald-500/20 transition-colors"
+                        >
+                          <span>⚽ Phòng trận đấu & Sa bàn →</span>
+                        </Link>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions Toolbar */}
@@ -367,6 +458,30 @@ ${pollUrl}`;
             </div>
 
             <form onSubmit={handleCreatePoll} className="space-y-3.5 text-xs">
+              {/* Select from existing match */}
+              {availableMatches.length > 0 && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3 space-y-1.5">
+                  <label className="block text-emerald-400 font-bold text-xs">
+                    ⚽ Tạo điểm danh dựa trên trận đấu đã có:
+                  </label>
+                  <select
+                    value={selectedMatchId}
+                    onChange={(e) => handleSelectMatch(e.target.value)}
+                    className="w-full bg-zinc-950 border border-emerald-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-400 font-medium"
+                  >
+                    <option value="">-- Tạo đợt điểm danh mới tự do --</option>
+                    {availableMatches.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.title} ({m.date} {m.time ? `• ${m.time}` : ''})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-zinc-400">
+                    Chọn trận đấu để tự động điền ngày, giờ, sân và đồng bộ quân số với phòng sa bàn.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-zinc-300 font-semibold mb-1">Tên trận đấu / đợt đá:</label>
                 <input

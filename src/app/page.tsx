@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import { Match, Player } from '@/types/football';
+import { Match, Player, INITIAL_ROSTER } from '@/types/football';
 import {
   Trophy,
   Users,
@@ -77,7 +77,7 @@ export default function HomePage() {
       numberOfTeams,
       notes: notes.trim(),
       status: 'SCHEDULED',
-      players: [],
+      players: INITIAL_ROSTER.map((p) => ({ ...p, status: 'OUT' })),
       teams: [],
       isDrawn: false,
       createdAt: Date.now(),

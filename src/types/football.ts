@@ -73,6 +73,7 @@ export interface PollVote {
 
 export interface AttendancePoll {
   id: string;
+  matchId?: string;
   title: string;
   date: string;
   time: string;
@@ -106,6 +107,7 @@ export interface Team {
 
 export interface Match {
   id: string;
+  pollId?: string;
   title: string;
   date: string;
   time: string;

@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
 
     const newPoll: AttendancePoll = {
       id,
+      matchId: body.matchId || undefined,
       title: body.title || 'Điểm danh đá bóng',
       date: body.date || new Date().toISOString().split('T')[0],
       time: body.time || '20:00 - 21:30',

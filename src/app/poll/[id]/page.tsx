@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, use, useCallback, Suspense } from 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { AttendancePoll, PollVote, Player, POSITION_LABELS, getGoogleMapsUrl } from '@/types/football';
+import { AttendancePoll, PollVote, Player, POSITION_LABELS, getGoogleMapsUrl, INITIAL_ROSTER } from '@/types/football';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import confetti from 'canvas-confetti';
 import {
@@ -433,6 +433,31 @@ ${window.location.href}`;
           </section>
         )}
 
+        {/* Linked Match Room Banner */}
+        {poll.matchId && (
+          <section className="bg-gradient-to-r from-teal-950/40 via-zinc-900 to-zinc-900 border border-teal-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Đợt điểm danh này gắn liền với Trận đấu</h3>
+                <p className="text-xs text-zinc-400">
+                  Quân số điểm danh sẽ tự động đồng bộ vào phòng sa bàn và danh sách thi đấu
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={`/match/${poll.matchId}`}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-teal-500/20 transition-all active:scale-95"
+            >
+              <span>⚽ Vào phòng trận đấu & Sa bàn</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </section>
+        )}
+
         {/* RSVP Check-in Section (Mobile-First) */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-xl">
           <div className="flex items-center gap-2.5 pb-3 border-b border-zinc-800 mb-4">
@@ -506,43 +531,88 @@ ${window.location.href}`;
             </div>
           ) : (
             /* Case 2: New Voter Form */
-            <div className="space-y-3">
-              {/* Dropdown to pick from club roster */}
-              {clubRoster.length > 0 && (
-                <div>
-                  <label className="block text-xs text-zinc-400 font-medium mb-1">
-                    Chọn tên bạn trong danh sách đội bóng:
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedRosterPlayer?.id || ''}
-                      onChange={(e) => {
-                        const player = clubRoster.find((p) => p.id === e.target.value);
-                        if (player) {
-                          setSelectedRosterPlayer(player);
-                          setVoterName(player.name);
-                        } else {
-                          setSelectedRosterPlayer(null);
-                        }
-                      }}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="">-- Chọn thành viên FC hoặc tự nhập bên dưới --</option>
-                      {clubRoster.map((player) => {
-                        const isVoted = poll.votes.some(
+            <div className="space-y-3.5">
+              {/* Quick Roster Chips for 16 FC Members */}
+              {(() => {
+                const activeRoster = clubRoster.length > 0 ? clubRoster : INITIAL_ROSTER;
+                return (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs text-zinc-300 font-semibold">
+                      ⚡ Bấm nhanh tên bạn trong 16 thành viên FC:
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeRoster.map((player) => {
+                        const vote = poll.votes.find(
                           (v) => v.playerName.toLowerCase() === player.name.toLowerCase()
                         );
+                        const isYes = vote?.status === 'YES';
+                        const isNo = vote?.status === 'NO';
+                        const isSelected = voterName === player.name;
+
                         return (
-                          <option key={player.id} value={player.id}>
-                            {player.name} ({player.position}) {isVoted ? '• Đã điểm danh' : ''}
-                          </option>
+                          <button
+                            type="button"
+                            key={player.id}
+                            onClick={() => {
+                              setSelectedRosterPlayer(player);
+                              setVoterName(player.name);
+                            }}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                              isSelected
+                                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/25'
+                                : isYes
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                                : isNo
+                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                                : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                            }`}
+                          >
+                            <span>{isYes ? '✅' : isNo ? '❌' : '⚪'}</span>
+                            <span>{player.name}</span>
+                            <span className="text-[10px] opacity-70">({player.position})</span>
+                          </button>
                         );
                       })}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-3 pointer-events-none" />
+                    </div>
                   </div>
+                );
+              })()}
+
+              {/* Dropdown to pick from club roster */}
+              <div>
+                <label className="block text-xs text-zinc-400 font-medium mb-1">
+                  Hoặc chọn từ danh sách:
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedRosterPlayer?.id || ''}
+                    onChange={(e) => {
+                      const activeRoster = clubRoster.length > 0 ? clubRoster : INITIAL_ROSTER;
+                      const player = activeRoster.find((p) => p.id === e.target.value);
+                      if (player) {
+                        setSelectedRosterPlayer(player);
+                        setVoterName(player.name);
+                      } else {
+                        setSelectedRosterPlayer(null);
+                      }
+                    }}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="">-- Chọn thành viên FC hoặc tự nhập bên dưới --</option>
+                    {(clubRoster.length > 0 ? clubRoster : INITIAL_ROSTER).map((player) => {
+                      const isVoted = poll.votes.some(
+                        (v) => v.playerName.toLowerCase() === player.name.toLowerCase()
+                      );
+                      return (
+                        <option key={player.id} value={player.id}>
+                          {player.name} ({player.position}) {isVoted ? '• Đã điểm danh' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-3 pointer-events-none" />
                 </div>
-              )}
+              </div>
 
               {/* Text input for custom guest name */}
               <div>

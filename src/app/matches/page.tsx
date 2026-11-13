@@ -21,6 +21,7 @@ import {
   X,
   Edit3,
   Lock,
+  ClipboardList,
 } from 'lucide-react';
 
 export default function MatchesPage() {
@@ -243,6 +244,15 @@ export default function MatchesPage() {
                           <span>Đội trưởng nhập điểm</span>
                         </button>
                       )}
+
+                      <Link
+                        href={m.pollId ? `/poll/${m.pollId}` : `/polls?matchId=${m.id}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-400 border border-teal-500/30 text-xs font-bold transition-colors"
+                        title="Điểm danh qua link bình chọn Zalo"
+                      >
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        <span>Điểm danh</span>
+                      </Link>
 
                       <Link
                         href={`/match/${m.id}`}

@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useMemo, use, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, use, Suspense } from 'react';
+import Link from 'next/link';
 import { useMatchSync } from '@/lib/sync';
 import { balanceTeams, swapPlayersBetweenTeams } from '@/lib/balance';
 import { formatZaloTextMessage, downloadPitchAsPng } from '@/lib/export';
-import { Player, Team, POSITION_LABELS, getGoogleMapsUrl } from '@/types/football';
+import { Player, Team, POSITION_LABELS, getGoogleMapsUrl, INITIAL_ROSTER } from '@/types/football';
 import Navbar from '@/components/Navbar';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import QuickPasteModal from '@/components/QuickPasteModal';
@@ -73,6 +74,16 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState<Player | null>(null);
   const [selfCheckInName, setSelfCheckInName] = useState('');
   const [showSelfCheckIn, setShowSelfCheckIn] = useState(false);
+
+  // Auto-seed initial 16 club players if match players list is empty
+  useEffect(() => {
+    if (match && (!match.players || match.players.length === 0)) {
+      saveMatch({
+        ...match,
+        players: INITIAL_ROSTER.map((p) => ({ ...p, status: 'OUT' })),
+      });
+    }
+  }, [match, saveMatch]);
 
   // Derived attendance stats
   const activePlayers = useMemo(() => {
@@ -381,8 +392,16 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* Actions: Copy Link to Zalo */}
+            {/* Actions: Copy Link to Zalo & Poll */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Link
+                href={match.pollId ? `/poll/${match.pollId}` : `/polls?matchId=${match.id}`}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all shadow-lg active:scale-95"
+              >
+                <ClipboardList className="w-4 h-4 text-emerald-400" />
+                <span>{match.pollId ? '🗳️ Xem Poll Điểm Danh' : '🗳️ Tạo Poll Điểm Danh'}</span>
+              </Link>
+
               <button
                 onClick={handleCopyLink}
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-lg active:scale-95 ${copiedLink
@@ -434,57 +453,101 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
         </section>
 
         {/* Self Check-in Banner for Quick RSVP */}
-        <section className="bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-900 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-              <Users className="w-5 h-5" />
+        <section className="bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-900 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Bạn tham gia trận này chứ?</h3>
+                <p className="text-xs text-zinc-400">
+                  Bấm trực tiếp vào tên của bạn bên dưới để xác nhận đi đá hoặc báo bận
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-sm text-white">Bạn tham gia trận này chứ?</h3>
-              <p className="text-xs text-zinc-400">
-                Bấm vào tên bạn bên dưới, hoặc nhập tên nhanh để xác nhận tham gia
-              </p>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {showSelfCheckIn ? (
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto animate-in fade-in">
+                  <select
+                    value={selfCheckInName}
+                    onChange={(e) => setSelfCheckInName(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="">-- Chọn tên bạn --</option>
+                    {match.players.map((p) => (
+                      <option key={p.id} value={p.name}>
+                        {p.name} ({p.position}) {p.status === 'IN' ? '• Đang có mặt' : '• Đang vắng'}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={selfCheckInName}
+                    onChange={(e) => setSelfCheckInName(e.target.value)}
+                    placeholder="Hoặc nhập tên khác..."
+                    className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 max-w-[140px]"
+                  />
+                  <button
+                    onClick={() => handleSelfCheckIn('IN')}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Đi đá
+                  </button>
+                  <button
+                    onClick={() => handleSelfCheckIn('OUT')}
+                    className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold cursor-pointer"
+                  >
+                    Bận
+                  </button>
+                  <button
+                    onClick={() => setShowSelfCheckIn(false)}
+                    className="p-1.5 text-zinc-500 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowSelfCheckIn(true)}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                >
+                  ⚡ Nhập tên khác / Khách
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {showSelfCheckIn ? (
-              <div className="flex items-center gap-2 w-full sm:w-auto animate-in fade-in">
-                <input
-                  type="text"
-                  value={selfCheckInName}
-                  onChange={(e) => setSelfCheckInName(e.target.value)}
-                  placeholder="Nhập tên của bạn..."
-                  className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                />
-                <button
-                  onClick={() => handleSelfCheckIn('IN')}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all"
-                >
-                  Tham gia
-                </button>
-                <button
-                  onClick={() => handleSelfCheckIn('OUT')}
-                  className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold"
-                >
-                  Bận
-                </button>
-                <button
-                  onClick={() => setShowSelfCheckIn(false)}
-                  className="p-1.5 text-zinc-500 hover:text-white"
-                >
-                  ✕
-                </button>
+          {/* Quick Roster Chips for 1-Tap Attendance */}
+          {match.players.length > 0 && (
+            <div className="pt-2.5 border-t border-zinc-800/80">
+              <span className="text-[11px] text-zinc-400 font-medium block mb-2">
+                Danh sách thành viên cố định (bấm để đổi trạng thái Có mặt / Báo bận):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {match.players.map((p) => {
+                  const isIn = p.status === 'IN';
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handleToggleStatus(p)}
+                      title={isIn ? 'Bấm để báo vắng (Nghỉ)' : 'Bấm để báo tham gia (Đi đá)'}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                        isIn
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-950'
+                          : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                      }`}
+                    >
+                      <span>{isIn ? '✅' : '⚪'}</span>
+                      <span>{p.name}</span>
+                      <span className="text-[10px] opacity-70">({p.position})</span>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <button
-                onClick={() => setShowSelfCheckIn(true)}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95"
-              >
-                ⚡ Tự điểm danh nhanh
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         {/* Main Content Grid: Left (Player Roster) & Right (Draw & Team Results) */}

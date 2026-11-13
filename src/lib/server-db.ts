@@ -167,6 +167,21 @@ export async function savePoll(poll: AttendancePoll): Promise<AttendancePoll> {
 
   memoryPolls = polls;
   await writeFileSafe(POLLS_FILE, polls);
+
+  if (updatedPoll.matchId) {
+    try {
+      const match = await getMatchById(updatedPoll.matchId);
+      if (match && match.pollId !== updatedPoll.id) {
+        await saveMatch({
+          ...match,
+          pollId: updatedPoll.id,
+        });
+      }
+    } catch (err) {
+      console.warn('Link poll to match error:', err);
+    }
+  }
+
   return updatedPoll;
 }
 
@@ -240,7 +255,52 @@ export async function castPollVote(
     updatedAt: Date.now(),
   };
 
-  return savePoll(updatedPoll);
+  const saved = await savePoll(updatedPoll);
+
+  // Sync vote status directly to linked match if matchId is present
+  if (poll.matchId) {
+    try {
+      const match = await getMatchById(poll.matchId);
+      if (match) {
+        let matchPlayers = [...(match.players || [])];
+        const matchIdx = matchPlayers.findIndex(
+          (p) => (playerId && p.id === playerId) || p.name.trim().toLowerCase() === trimmedName.toLowerCase()
+        );
+        const targetStatus: 'IN' | 'OUT' = voteInput.status === 'YES' ? 'IN' : 'OUT';
+        if (matchIdx >= 0) {
+          matchPlayers[matchIdx] = {
+            ...matchPlayers[matchIdx],
+            status: targetStatus,
+          };
+        } else {
+          matchPlayers.push({
+            id: playerId || `p_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            name: trimmedName,
+            position: position as Player['position'],
+            rating,
+            status: targetStatus,
+            isGuest: !matchedRosterPlayer,
+            matchesPlayed: 1,
+            goals: 0,
+            assists: 0,
+            wins: 0,
+            draws: 0,
+            losses: 0,
+            mvpCount: 0,
+          });
+        }
+        await saveMatch({
+          ...match,
+          players: matchPlayers,
+          updatedAt: Date.now(),
+        });
+      }
+    } catch (err) {
+      console.warn('Sync poll vote to match error:', err);
+    }
+  }
+
+  return saved;
 }
 
 // --- ROSTER API ---
@@ -315,7 +375,13 @@ export async function getMatchById(id: string): Promise<Match | null> {
     try {
       const snap = await getDoc(doc(db, 'matches', id));
       if (snap.exists()) {
-        return snap.data() as Match;
+        const matchData = snap.data() as Match;
+        if (!matchData.players || matchData.players.length === 0) {
+          const roster = await getRoster();
+          matchData.players = roster.map((p) => ({ ...p, status: 'OUT' }));
+          await setDoc(doc(db, 'matches', id), matchData);
+        }
+        return matchData;
       }
     } catch (err) {
       console.warn('Firestore getMatchById error:', err);
@@ -323,7 +389,16 @@ export async function getMatchById(id: string): Promise<Match | null> {
   }
 
   const matches = await getMatches();
-  return matches.find((m) => m.id === id) || null;
+  const found = matches.find((m) => m.id === id);
+  if (found) {
+    if (!found.players || found.players.length === 0) {
+      const roster = await getRoster();
+      found.players = roster.map((p) => ({ ...p, status: 'OUT' }));
+      await saveMatch(found);
+    }
+    return found;
+  }
+  return null;
 }
 
 export async function saveMatch(match: Match): Promise<Match> {
