@@ -482,107 +482,161 @@ ${pollUrl}`;
                 </div>
               )}
 
-              <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Tên trận đấu / đợt đá:</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="VD: Nội chiến Thứ 5 - FC Anh Em"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  required
-                />
-              </div>
+              {/* If a match is selected: show read-only match summary card */}
+              {(() => {
+                const selectedMatch = availableMatches.find((m) => m.id === selectedMatchId);
+                if (selectedMatch) {
+                  return (
+                    <div className="bg-zinc-950 border border-emerald-500/40 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                        <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                          Thông tin trận đấu đã liên kết
+                        </span>
+                        <span className="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-zinc-800 text-zinc-300">
+                          Sân {selectedMatch.format} • Cần {selectedMatch.targetPlayers} người
+                        </span>
+                      </div>
 
-              {/* Format Selector */}
-              <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Thể thức sân bóng:</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['5v5', '7v7', '11v11'] as const).map((fmt) => (
-                    <button
-                      type="button"
-                      key={fmt}
-                      onClick={() => handleFormatChange(fmt)}
-                      className={`py-2 rounded-xl font-bold border transition-all ${format === fmt
-                          ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md'
-                          : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
-                        }`}
-                    >
-                      Sân {fmt}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <div>
+                        <h4 className="text-sm font-extrabold text-white">{selectedMatch.title}</h4>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 text-xs text-zinc-400">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{selectedMatch.date}</span>
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{selectedMatch.time}</span>
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{selectedMatch.venue}</span>
+                          </span>
+                        </div>
+                      </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">Ngày thi đấu:</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
+                      {selectedMatch.notes && (
+                        <p className="text-[11px] text-zinc-400 bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800/80">
+                          💬 Ghi chú: {selectedMatch.notes}
+                        </p>
+                      )}
 
-                <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">Khung giờ:</label>
-                  <input
-                    type="text"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    placeholder="20:00 - 21:30"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 text-[11px] text-emerald-300 flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>
+                          Toàn bộ thông tin đã được tự động lấy từ trận đấu. Quân số điểm danh sẽ đồng bộ với phòng sa bàn!
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-zinc-300 font-semibold mb-1">Địa điểm / Sân bóng:</label>
-                  <input
-                    type="text"
-                    value={venue}
-                    onChange={(e) => setVenue(e.target.value)}
-                    placeholder="VD: Sân Chuyên Việt (Q7)"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
+                return (
+                  <>
+                    <div>
+                      <label className="block text-zinc-300 font-semibold mb-1">Tên trận đấu / đợt đá:</label>
+                      <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="VD: Nội chiến Thứ 5 - FC Anh Em"
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-500"
+                        required
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-zinc-300 font-semibold mb-1">Sĩ số cần:</label>
-                  <input
-                    type="number"
-                    min="4"
-                    max="40"
-                    value={targetPlayers}
-                    onChange={(e) => setTargetPlayers(Number(e.target.value))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-bold text-center"
-                  />
-                </div>
-              </div>
+                    {/* Format Selector */}
+                    <div>
+                      <label className="block text-zinc-300 font-semibold mb-1">Thể thức sân bóng:</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['5v5', '7v7', '11v11'] as const).map((fmt) => (
+                          <button
+                            type="button"
+                            key={fmt}
+                            onClick={() => handleFormatChange(fmt)}
+                            className={`py-2 rounded-xl font-bold border transition-all ${format === fmt
+                                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md'
+                                : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                              }`}
+                          >
+                            Sân {fmt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-              <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Link Google Maps (Tùy chọn):</label>
-                <input
-                  type="url"
-                  value={venueMapUrl}
-                  onChange={(e) => setVenueMapUrl(e.target.value)}
-                  placeholder="https://maps.app.goo.gl/... (nếu để trống sẽ tự tìm theo tên sân)"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-zinc-300 font-semibold mb-1">Ngày thi đấu:</label>
+                        <input
+                          type="date"
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
 
-              <div>
-                <label className="block text-zinc-300 font-semibold mb-1">Ghi chú (Áo, tiền sân, lưu ý):</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  placeholder="VD: Mang áo 2 màu, đến trước 15p..."
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 resize-none"
-                />
-              </div>
+                      <div>
+                        <label className="block text-zinc-300 font-semibold mb-1">Khung giờ:</label>
+                        <input
+                          type="text"
+                          value={time}
+                          onChange={(e) => setTime(e.target.value)}
+                          placeholder="20:00 - 21:30"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-zinc-300 font-semibold mb-1">Địa điểm / Sân bóng:</label>
+                        <input
+                          type="text"
+                          value={venue}
+                          onChange={(e) => setVenue(e.target.value)}
+                          placeholder="VD: Sân Chuyên Việt (Q7)"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-zinc-300 font-semibold mb-1">Sĩ số cần:</label>
+                        <input
+                          type="number"
+                          min="4"
+                          max="40"
+                          value={targetPlayers}
+                          onChange={(e) => setTargetPlayers(Number(e.target.value))}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-bold text-center"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-zinc-300 font-semibold mb-1">Link Google Maps (Tùy chọn):</label>
+                      <input
+                        type="url"
+                        value={venueMapUrl}
+                        onChange={(e) => setVenueMapUrl(e.target.value)}
+                        placeholder="https://maps.app.goo.gl/... (nếu để trống sẽ tự tìm theo tên sân)"
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-zinc-300 font-semibold mb-1">Ghi chú (Áo, tiền sân, lưu ý):</label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={2}
+                        placeholder="VD: Mang áo 2 màu, đến trước 15p..."
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 resize-none"
+                      />
+                    </div>
+                  </>
+                );
+              })()}
 
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
@@ -597,7 +651,11 @@ ${pollUrl}`;
                   disabled={isSubmitting}
                   className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
                 >
-                  {isSubmitting ? 'Đang tạo...' : 'Tạo đợt điểm danh'}
+                  {isSubmitting
+                    ? 'Đang tạo...'
+                    : selectedMatchId
+                    ? '⚡ Tạo link điểm danh cho trận này'
+                    : 'Tạo đợt điểm danh'}
                 </button>
               </div>
             </form>

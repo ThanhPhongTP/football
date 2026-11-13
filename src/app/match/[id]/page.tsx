@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, use, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMatchSync } from '@/lib/sync';
 import { balanceTeams, swapPlayersBetweenTeams } from '@/lib/balance';
 import { formatZaloTextMessage, downloadPitchAsPng } from '@/lib/export';
@@ -56,6 +57,7 @@ export default function MatchRoomPage({ params }: { params: Promise<{ id: string
 function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const matchId = resolvedParams.id;
+  const router = useRouter();
   const { isAdmin, openPasswordModal } = useAdminAuth();
 
   const { match, saveMatch, isSyncing, isCloudEnabled } = useMatchSync(matchId);
@@ -74,6 +76,59 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState<Player | null>(null);
   const [selfCheckInName, setSelfCheckInName] = useState('');
   const [showSelfCheckIn, setShowSelfCheckIn] = useState(false);
+  const [isCreatingPoll, setIsCreatingPoll] = useState(false);
+
+  const handleOpenOrCreatePoll = async () => {
+    if (!match) return;
+    if (match.pollId) {
+      router.push(`/poll/${match.pollId}`);
+      return;
+    }
+
+    setIsCreatingPoll(true);
+    try {
+      const activeVotes = (match.players || [])
+        .filter((p) => p.status === 'IN')
+        .map((p) => ({
+          id: `v_${p.id}`,
+          playerId: p.id,
+          playerName: p.name,
+          status: 'YES' as const,
+          position: p.position,
+          rating: p.rating,
+          updatedAt: Date.now(),
+        }));
+
+      const res = await fetch('/api/polls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId: match.id,
+          title: match.title,
+          date: match.date,
+          time: match.time,
+          venue: match.venue,
+          venueMapUrl: match.venueMapUrl,
+          format: match.format,
+          targetPlayers: match.targetPlayers,
+          notes: match.notes,
+          votes: activeVotes,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Không thể tạo đợt điểm danh');
+      const newPoll = await res.json();
+      saveMatch({
+        ...match,
+        pollId: newPoll.id,
+      });
+      router.push(`/poll/${newPoll.id}`);
+    } catch {
+      alert('Lỗi khi tạo đợt điểm danh.');
+    } finally {
+      setIsCreatingPoll(false);
+    }
+  };
 
   // Auto-seed initial 16 club players if match players list is empty
   useEffect(() => {
@@ -394,13 +449,20 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Actions: Copy Link to Zalo & Poll */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <Link
-                href={match.pollId ? `/poll/${match.pollId}` : `/polls?matchId=${match.id}`}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all shadow-lg active:scale-95"
+              <button
+                onClick={handleOpenOrCreatePoll}
+                disabled={isCreatingPoll}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <ClipboardList className="w-4 h-4 text-emerald-400" />
-                <span>{match.pollId ? '🗳️ Xem Poll Điểm Danh' : '🗳️ Tạo Poll Điểm Danh'}</span>
-              </Link>
+                <span>
+                  {isCreatingPoll
+                    ? 'Đang tạo poll...'
+                    : match.pollId
+                    ? '🗳️ Xem Poll Điểm Danh'
+                    : '🗳️ Tạo Poll Điểm Danh'}
+                </span>
+              </button>
 
               <button
                 onClick={handleCopyLink}
