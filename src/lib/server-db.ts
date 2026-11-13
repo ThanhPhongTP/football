@@ -1,6 +1,15 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { AttendancePoll, PollVote, Match, Player, INITIAL_ROSTER } from '@/types/football';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+} from 'firebase/firestore';
+import { getServerDb } from './firebase';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const POLLS_FILE = path.join(DATA_DIR, 'polls.json');
@@ -89,6 +98,27 @@ async function initDefaultData() {
 
 // --- POLLS API ---
 export async function getPolls(): Promise<AttendancePoll[]> {
+  const db = getServerDb();
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'polls'));
+      if (!snap.empty) {
+        const list = snap.docs.map((d) => d.data() as AttendancePoll);
+        return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      }
+      // If Firestore is empty, seed default poll
+      await initDefaultData();
+      if (memoryPolls.length > 0) {
+        for (const p of memoryPolls) {
+          await setDoc(doc(db, 'polls', p.id), p);
+        }
+        return memoryPolls;
+      }
+    } catch (err) {
+      console.warn('Firestore getPolls error, falling back to local:', err);
+    }
+  }
+
   await initDefaultData();
   const fileData = await readFileSafe<AttendancePoll[]>(POLLS_FILE, memoryPolls);
   memoryPolls = fileData;
@@ -96,18 +126,39 @@ export async function getPolls(): Promise<AttendancePoll[]> {
 }
 
 export async function getPollById(id: string): Promise<AttendancePoll | null> {
+  const db = getServerDb();
+  if (db) {
+    try {
+      const snap = await getDoc(doc(db, 'polls', id));
+      if (snap.exists()) {
+        return snap.data() as AttendancePoll;
+      }
+    } catch (err) {
+      console.warn('Firestore getPollById error:', err);
+    }
+  }
+
   const polls = await getPolls();
   return polls.find((p) => p.id === id) || null;
 }
 
 export async function savePoll(poll: AttendancePoll): Promise<AttendancePoll> {
-  const polls = await getPolls();
-  const idx = polls.findIndex((p) => p.id === poll.id);
   const updatedPoll: AttendancePoll = {
     ...poll,
     updatedAt: Date.now(),
   };
 
+  const db = getServerDb();
+  if (db) {
+    try {
+      await setDoc(doc(db, 'polls', updatedPoll.id), updatedPoll);
+    } catch (err) {
+      console.warn('Firestore savePoll error:', err);
+    }
+  }
+
+  const polls = await readFileSafe<AttendancePoll[]>(POLLS_FILE, memoryPolls);
+  const idx = polls.findIndex((p) => p.id === poll.id);
   if (idx >= 0) {
     polls[idx] = updatedPoll;
   } else {
@@ -120,14 +171,23 @@ export async function savePoll(poll: AttendancePoll): Promise<AttendancePoll> {
 }
 
 export async function deletePoll(id: string): Promise<boolean> {
-  const polls = await getPolls();
+  const db = getServerDb();
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'polls', id));
+    } catch (err) {
+      console.warn('Firestore deletePoll error:', err);
+    }
+  }
+
+  const polls = await readFileSafe<AttendancePoll[]>(POLLS_FILE, memoryPolls);
   const filtered = polls.filter((p) => p.id !== id);
   if (filtered.length !== polls.length) {
     memoryPolls = filtered;
     await writeFileSafe(POLLS_FILE, filtered);
     return true;
   }
-  return false;
+  return true;
 }
 
 export async function castPollVote(
@@ -185,6 +245,26 @@ export async function castPollVote(
 
 // --- ROSTER API ---
 export async function getRoster(): Promise<Player[]> {
+  const db = getServerDb();
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'roster'));
+      if (!snap.empty) {
+        return snap.docs.map((d) => d.data() as Player);
+      }
+      // If collection empty in firestore, seed default roster
+      await initDefaultData();
+      if (memoryRoster.length > 0) {
+        for (const player of memoryRoster) {
+          await setDoc(doc(db, 'roster', player.id), player);
+        }
+        return memoryRoster;
+      }
+    } catch (err) {
+      console.warn('Firestore getRoster error:', err);
+    }
+  }
+
   await initDefaultData();
   const fileData = await readFileSafe<Player[]>(ROSTER_FILE, memoryRoster);
   memoryRoster = fileData;
@@ -192,6 +272,17 @@ export async function getRoster(): Promise<Player[]> {
 }
 
 export async function saveRoster(roster: Player[]): Promise<Player[]> {
+  const db = getServerDb();
+  if (db) {
+    try {
+      for (const p of roster) {
+        await setDoc(doc(db, 'roster', p.id), p);
+      }
+    } catch (err) {
+      console.warn('Firestore saveRoster error:', err);
+    }
+  }
+
   memoryRoster = roster;
   await writeFileSafe(ROSTER_FILE, roster);
   return roster;
@@ -199,6 +290,19 @@ export async function saveRoster(roster: Player[]): Promise<Player[]> {
 
 // --- MATCHES API ---
 export async function getMatches(): Promise<Match[]> {
+  const db = getServerDb();
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'matches'));
+      if (!snap.empty) {
+        const list = snap.docs.map((d) => d.data() as Match);
+        return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      }
+    } catch (err) {
+      console.warn('Firestore getMatches error:', err);
+    }
+  }
+
   await initDefaultData();
   const fileData = await readFileSafe<Match[]>(MATCHES_FILE, memoryMatches);
   memoryMatches = fileData;
@@ -206,18 +310,39 @@ export async function getMatches(): Promise<Match[]> {
 }
 
 export async function getMatchById(id: string): Promise<Match | null> {
+  const db = getServerDb();
+  if (db) {
+    try {
+      const snap = await getDoc(doc(db, 'matches', id));
+      if (snap.exists()) {
+        return snap.data() as Match;
+      }
+    } catch (err) {
+      console.warn('Firestore getMatchById error:', err);
+    }
+  }
+
   const matches = await getMatches();
   return matches.find((m) => m.id === id) || null;
 }
 
 export async function saveMatch(match: Match): Promise<Match> {
-  const matches = await getMatches();
-  const idx = matches.findIndex((m) => m.id === match.id);
   const updatedMatch: Match = {
     ...match,
     updatedAt: Date.now(),
   };
 
+  const db = getServerDb();
+  if (db) {
+    try {
+      await setDoc(doc(db, 'matches', updatedMatch.id), updatedMatch);
+    } catch (err) {
+      console.warn('Firestore saveMatch error:', err);
+    }
+  }
+
+  const matches = await readFileSafe<Match[]>(MATCHES_FILE, memoryMatches);
+  const idx = matches.findIndex((m) => m.id === match.id);
   if (idx >= 0) {
     matches[idx] = updatedMatch;
   } else {

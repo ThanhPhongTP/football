@@ -378,20 +378,21 @@ export default function HomePage() {
                                   Chia làm mấy đội?
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {([2, 3, 4] as const).map((num) => (
-                                      <button
-                                        key={num}
-                                        type="button"
-                                        onClick={() => setNumberOfTeams(num)}
-                        numberOfTeams === num
-                                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md'
-                                        : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
-                      }`}
-                    >
-                                  {num} Đội {num === 2 ? '(Đối kháng)' : num === 3 ? '(Tam hùng)' : ''}
-                                </button>
-                  ))}
-                              </div>
+                                  {([2, 3, 4] as const).map((num) => (
+                                    <button
+                                      key={num}
+                                      type="button"
+                                      onClick={() => setNumberOfTeams(num)}
+                                      className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                                        numberOfTeams === num
+                                          ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-md'
+                                          : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                                      }`}
+                                    >
+                                      {num} Đội {num === 2 ? '(Đối kháng)' : num === 3 ? '(Tam hùng)' : ''}
+                                    </button>
+                                  ))}
+                                </div>
                             </div>
 
                             {/* Initial Roster Paste (Optional) */}
