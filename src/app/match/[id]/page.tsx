@@ -485,37 +485,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                 </span>
               </div>
 
-              {/* Action Buttons: Add Player & Paste Zalo */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button
-                  onClick={() => {
-                    if (!isAdmin) {
-                      openPasswordModal();
-                      return;
-                    }
-                    setEditingPlayer(null);
-                    setIsAddPlayerOpen(true);
-                  }}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold border border-zinc-700/80 transition-colors cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>+ Thêm cầu thủ</span>
-                </button>
 
-                <button
-                  onClick={() => {
-                    if (!isAdmin) {
-                      openPasswordModal();
-                      return;
-                    }
-                    setIsQuickPasteOpen(true);
-                  }}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold border border-zinc-700/80 transition-colors cursor-pointer"
-                >
-                  <ClipboardList className="w-3.5 h-3.5 text-teal-400" />
-                  <span>📋 Dán từ Zalo</span>
-                </button>
-              </div>
 
               {/* Filter Tabs */}
               <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800 mb-3 text-xs">
@@ -555,7 +525,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                     Chưa có cầu thủ nào trong danh sách này.
                   </div>
                 ) : (
-                  filteredPlayers.map((player, idx) => {
+                  filteredPlayers.map((player) => {
                     const posInfo = POSITION_LABELS[player.position];
                     const isIn = player.status === 'IN';
 
@@ -563,18 +533,16 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                       <div
                         key={player.id}
                         className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${isIn
-                            ? 'bg-zinc-950/80 border-zinc-800 hover:border-zinc-700'
+                            ? 'bg-zinc-950/80 border-zinc-800'
                             : 'bg-zinc-950/40 border-zinc-900 opacity-60'
                           }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          {/* Toggle In/Out Button */}
-                          <button
-                            onClick={() => handleToggleStatus(player)}
-                            title={isIn ? 'Bấm để báo vắng' : 'Bấm để báo tham gia'}
-                            className={`p-1 rounded-lg transition-transform active:scale-90 ${isIn
-                                ? 'text-emerald-400 hover:bg-emerald-500/10'
-                                : 'text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10'
+                          {/* Static Status Indicator */}
+                          <div
+                            className={`p-1 rounded-lg ${isIn
+                                ? 'text-emerald-400'
+                                : 'text-zinc-600'
                               }`}
                           >
                             {isIn ? (
@@ -582,7 +550,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                             ) : (
                               <XCircle className="w-5 h-5" />
                             )}
-                          </button>
+                          </div>
 
                           {/* Position Badge */}
                           <span
@@ -599,34 +567,23 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                           </div>
                         </div>
 
-                        {/* Rating & Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Status Label (View-only) */}
+                        <div className="flex items-center gap-2 shrink-0">
                           {isAdmin && (
-                            <>
-                              <span className="text-xs font-semibold text-amber-400 flex items-center gap-0.5 mr-1">
-                                <Star className="w-3 h-3 fill-amber-400" />
-                                <span>{player.rating}</span>
-                              </span>
-
-                              <button
-                                onClick={() => {
-                                  setEditingPlayer(player);
-                                  setIsAddPlayerOpen(true);
-                                }}
-                                className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 cursor-pointer"
-                                title="Sửa"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeletePlayer(player.id)}
-                                className="p-1 rounded text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 cursor-pointer"
-                                title="Xóa"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            <span className="text-xs font-semibold text-amber-400 flex items-center gap-0.5 mr-1">
+                              <Star className="w-3 h-3 fill-amber-400" />
+                              <span>{player.rating}</span>
+                            </span>
                           )}
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                              isIn
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-500/10 text-rose-400/80 border border-rose-500/20'
+                            }`}
+                          >
+                            {isIn ? 'Có mặt' : 'Vắng'}
+                          </span>
                         </div>
                       </div>
                     );
