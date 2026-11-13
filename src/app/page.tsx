@@ -17,7 +17,6 @@ import {
   CheckCircle,
   Shield,
   Layers,
-  History,
   Key,
   Lock,
 } from 'lucide-react';
@@ -38,25 +37,12 @@ export default function HomePage() {
   const [numberOfTeams, setNumberOfTeams] = useState<2 | 3 | 4>(2);
   const [notes, setNotes] = useState('Anh em mang 2 áo (Áo Cam & Áo Xanh dương)');
 
-  const [recentMatches, setRecentMatches] = useState<
-    { id: string; title: string; date: string; time: string; updatedAt: number }[]
-  >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Set default date
     const today = new Date();
     setDate(today.toISOString().split('T')[0]);
-
-    // Load recent matches
-    const recentRaw = localStorage.getItem('footdraw_recent_matches');
-    if (recentRaw) {
-      try {
-        setRecentMatches(JSON.parse(recentRaw));
-      } catch {
-        // ignore
-      }
-    }
   }, []);
 
   // Update target players when format changes
@@ -108,23 +94,6 @@ export default function HomePage() {
         let clubMatches = matchesRaw ? JSON.parse(matchesRaw) : [];
         clubMatches.unshift(newMatch);
         localStorage.setItem('footdraw_club_matches', JSON.stringify(clubMatches));
-      } catch {
-        // ignore
-      }
-
-      // Save to recent list
-      try {
-        const recentRaw = localStorage.getItem('footdraw_recent_matches');
-        let recent = recentRaw ? JSON.parse(recentRaw) : [];
-        recent = recent.filter((r: { id: string }) => r.id !== matchId);
-        recent.unshift({
-          id: matchId,
-          title: newMatch.title,
-          date: newMatch.date,
-          time: newMatch.time,
-          updatedAt: Date.now(),
-        });
-        localStorage.setItem('footdraw_recent_matches', JSON.stringify(recent.slice(0, 10)));
       } catch {
         // ignore
       }
@@ -408,36 +377,6 @@ export default function HomePage() {
                     </form>
                   </div>
         )}
-
-              {/* Recent Matches on This Machine */}
-              {recentMatches.length > 0 && (
-                <div className="max-w-2xl mx-auto space-y-3">
-                  <div className="flex items-center gap-2 text-zinc-300 font-bold text-sm">
-                    <History className="w-4 h-4 text-emerald-400" />
-                    <span>Trận đấu gần đây của bạn</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {recentMatches.slice(0, 4).map((m) => (
-                      <div
-                        key={m.id}
-                        onClick={() => router.push(`/match/${m.id}`)}
-                        className="p-4 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800/90 border border-zinc-800 hover:border-emerald-500/50 cursor-pointer transition-all group shadow-md"
-                      >
-                        <h4 className="font-bold text-white text-sm group-hover:text-emerald-400 transition-colors line-clamp-1">
-                          {m.title}
-                        </h4>
-                        <p className="text-xs text-zinc-400 mt-1">
-                          {m.date} {m.time ? `• ${m.time}` : ''}
-                        </p>
-                        <span className="text-[11px] text-emerald-400 font-semibold inline-flex items-center gap-1 mt-2">
-                          Vào phòng đấu →
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Feature Highlights Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-zinc-900">

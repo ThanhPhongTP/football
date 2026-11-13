@@ -13,7 +13,6 @@ import {
   Receipt,
   ClipboardList,
   Plus,
-  History,
   Check,
   X,
   Menu,

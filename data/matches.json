@@ -1,2 +1,20 @@
-[]
-
+[
+  {
+    "id": "match_mwf4vibz_gl9b",
+    "title": "Nội chiến FC Anh Em - Thứ 4",
+    "date": "2026-11-18",
+    "time": "17:00 - 18:30",
+    "venue": "Sân bóng D7 Phú Mỹ Hưng",
+    "venueMapUrl": "https://maps.app.goo.gl/LDVujJNsrG3UYhd98",
+    "format": "5v5",
+    "targetPlayers": 10,
+    "numberOfTeams": 2,
+    "notes": "Anh em mang 2 áo (Áo Cam & Áo Xanh dương)",
+    "status": "SCHEDULED",
+    "players": [],
+    "teams": [],
+    "isDrawn": false,
+    "createdAt": 1794583826063,
+    "updatedAt": 1794583826618
+  }
+]

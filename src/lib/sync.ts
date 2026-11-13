@@ -165,24 +165,6 @@ export function useMatchSync(matchId: string, initialMatch?: Match | null) {
           // ignore
         }
 
-        // Save to recent matches list
-        try {
-          const recentKey = 'footdraw_recent_matches';
-          const recentRaw = localStorage.getItem(recentKey);
-          let recent: { id: string; title: string; date: string; time: string; updatedAt: number }[] = recentRaw ? JSON.parse(recentRaw) : [];
-          recent = recent.filter((r) => r.id !== matchId);
-          recent.unshift({
-            id: matchId,
-            title: withTimestamp.title,
-            date: withTimestamp.date,
-            time: withTimestamp.time,
-            updatedAt: Date.now(),
-          });
-          localStorage.setItem(recentKey, JSON.stringify(recent.slice(0, 10)));
-        } catch {
-          // ignore
-        }
-
         // Broadcast to other tabs
         if (channelRef.current) {
           channelRef.current.postMessage(withTimestamp);
