@@ -74,8 +74,6 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   const [attendanceFilter, setAttendanceFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [activeTab, setActiveTab] = useState<'pitch' | 'cards'>('pitch');
   const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState<Player | null>(null);
-  const [selfCheckInName, setSelfCheckInName] = useState('');
-  const [showSelfCheckIn, setShowSelfCheckIn] = useState(false);
   const [isCreatingPoll, setIsCreatingPoll] = useState(false);
 
   const handleOpenOrCreatePoll = async () => {
@@ -220,48 +218,6 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
       ...match,
       players: updated,
     });
-  };
-
-  // Self Check-In action
-  const handleSelfCheckIn = (status: 'IN' | 'OUT') => {
-    if (!match || !selfCheckInName.trim()) return;
-
-    const trimmed = selfCheckInName.trim();
-    // Check if player with this name already exists (case-insensitive)
-    const existing = match.players.find(
-      (p) => p.name.toLowerCase() === trimmed.toLowerCase()
-    );
-
-    let updatedList = [...match.players];
-    if (existing) {
-      updatedList = updatedList.map((p) =>
-        p.id === existing.id ? { ...p, status } : p
-      );
-    } else {
-      updatedList.push({
-        id: `p_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: trimmed,
-        position: 'MID',
-        rating: 7,
-        status,
-        isGuest: true,
-        matchesPlayed: 1,
-        goals: 0,
-        assists: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        mvpCount: 0,
-      });
-    }
-
-    saveMatch({
-      ...match,
-      players: updatedList,
-    });
-
-    setSelfCheckInName('');
-    setShowSelfCheckIn(false);
   };
 
   // Execute Auto Team Balancing
@@ -512,104 +468,6 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               />
             </div>
           </div>
-        </section>
-
-        {/* Self Check-in Banner for Quick RSVP */}
-        <section className="bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-900 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-white">Bạn tham gia trận này chứ?</h3>
-                <p className="text-xs text-zinc-400">
-                  Bấm trực tiếp vào tên của bạn bên dưới để xác nhận đi đá hoặc báo bận
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {showSelfCheckIn ? (
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto animate-in fade-in">
-                  <select
-                    value={selfCheckInName}
-                    onChange={(e) => setSelfCheckInName(e.target.value)}
-                    className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">-- Chọn tên bạn --</option>
-                    {match.players.map((p) => (
-                      <option key={p.id} value={p.name}>
-                        {p.name} ({p.position}) {p.status === 'IN' ? '• Đang có mặt' : '• Đang vắng'}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={selfCheckInName}
-                    onChange={(e) => setSelfCheckInName(e.target.value)}
-                    placeholder="Hoặc nhập tên khác..."
-                    className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 max-w-[140px]"
-                  />
-                  <button
-                    onClick={() => handleSelfCheckIn('IN')}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Đi đá
-                  </button>
-                  <button
-                    onClick={() => handleSelfCheckIn('OUT')}
-                    className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold cursor-pointer"
-                  >
-                    Bận
-                  </button>
-                  <button
-                    onClick={() => setShowSelfCheckIn(false)}
-                    className="p-1.5 text-zinc-500 hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowSelfCheckIn(true)}
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
-                >
-                  ⚡ Nhập tên khác / Khách
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Roster Chips for 1-Tap Attendance */}
-          {match.players.length > 0 && (
-            <div className="pt-2.5 border-t border-zinc-800/80">
-              <span className="text-[11px] text-zinc-400 font-medium block mb-2">
-                Danh sách thành viên cố định (bấm để đổi trạng thái Có mặt / Báo bận):
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {match.players.map((p) => {
-                  const isIn = p.status === 'IN';
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => handleToggleStatus(p)}
-                      title={isIn ? 'Bấm để báo vắng (Nghỉ)' : 'Bấm để báo tham gia (Đi đá)'}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                        isIn
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-950'
-                          : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white'
-                      }`}
-                    >
-                      <span>{isIn ? '✅' : '⚪'}</span>
-                      <span>{p.name}</span>
-                      <span className="text-[10px] opacity-70">({p.position})</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </section>
 
         {/* Main Content Grid: Left (Player Roster) & Right (Draw & Team Results) */}
