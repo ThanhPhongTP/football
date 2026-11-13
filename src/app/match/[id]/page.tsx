@@ -154,6 +154,35 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
     return match.players;
   }, [match, attendanceFilter, activePlayers, outPlayers]);
 
+  // Derived teams that strictly exclude any player whose status is OUT
+  const displayTeams = useMemo(() => {
+    if (!match?.isDrawn || !match?.teams || match.teams.length === 0) return [];
+    const activeIds = new Set(activePlayers.map((p) => p.id));
+    const activeNames = new Set(activePlayers.map((p) => p.name.trim().toLowerCase()));
+
+    const filtered = match.teams.map((team) => {
+      const validPlayers = team.players.filter(
+        (p) => activeIds.has(p.id) || activeNames.has(p.name.trim().toLowerCase())
+      );
+      const totalRating = validPlayers.reduce((sum, p) => sum + p.rating, 0);
+      const avgRating = validPlayers.length > 0 ? Number((totalRating / validPlayers.length).toFixed(1)) : 0;
+      return {
+        ...team,
+        players: validPlayers,
+        totalRating,
+        avgRating,
+        gkCount: validPlayers.filter((p) => p.position === 'GK').length,
+        defCount: validPlayers.filter((p) => p.position === 'DEF').length,
+        midCount: validPlayers.filter((p) => p.position === 'MID').length,
+        fwdCount: validPlayers.filter((p) => p.position === 'FWD').length,
+      };
+    });
+
+    const totalActiveInTeams = filtered.reduce((sum, t) => sum + t.players.length, 0);
+    if (totalActiveInTeams === 0) return [];
+    return filtered;
+  }, [match, activePlayers]);
+
   // Handle Copy share link
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
@@ -293,7 +322,11 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   // Copy formatted Zalo message
   const handleCopyZaloText = () => {
     if (!match) return;
-    const text = formatZaloTextMessage(match);
+    const matchForZalo = {
+      ...match,
+      teams: displayTeams,
+    };
+    const text = formatZaloTextMessage(matchForZalo);
     navigator.clipboard.writeText(text);
     setCopiedText(true);
     setTimeout(() => setCopiedText(false), 2500);
@@ -687,7 +720,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
           </div>
 
           {/* Results Section */}
-          {match.isDrawn && match.teams && match.teams.length > 0 ? (
+          {displayTeams.length > 0 ? (
             <div className="space-y-4">
               {/* View Switcher & Export Toolbar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -742,7 +775,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               {/* Tab 1: Realistic Pitch View */}
               {activeTab === 'pitch' && (
                 <FootballPitchView
-                  teams={match.teams}
+                  teams={displayTeams}
                   matchTitle={match.title}
                   matchInfo={`${match.date ? `${match.date} • ` : ''}${match.time || ''}${match.venue ? ` • ${match.venue}` : ''}`}
                   selectedPlayerForSwap={isAdmin ? selectedPlayerForSwap : null}
@@ -752,8 +785,8 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
 
               {/* Tab 2: Interactive Squad Cards */}
               {activeTab === 'cards' && (
-                <div className={`grid grid-cols-1 ${match.teams.length > 2 ? 'md:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-                  {match.teams.map((team) => (
+                <div className={`grid grid-cols-1 ${displayTeams.length > 2 ? 'md:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
+                  {displayTeams.map((team) => (
                     <TeamCard
                       key={team.id}
                       team={team}

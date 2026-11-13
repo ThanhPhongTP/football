@@ -24,7 +24,6 @@ import {
   Lock,
   Unlock,
   AlertCircle,
-  ChevronDown,
   UserCheck,
 } from 'lucide-react';
 
@@ -531,15 +530,22 @@ ${window.location.href}`;
             </div>
           ) : (
             /* Case 2: New Voter Form */
-            <div className="space-y-3.5">
+            <div className="space-y-4">
               {/* Quick Roster Chips for 16 FC Members */}
               {(() => {
                 const activeRoster = clubRoster.length > 0 ? clubRoster : INITIAL_ROSTER;
                 return (
-                  <div className="space-y-1.5">
-                    <label className="block text-xs text-zinc-300 font-semibold">
-                      ⚡ Bấm nhanh tên bạn trong 16 thành viên FC:
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label className="block text-xs text-zinc-300 font-semibold">
+                        👉 Bấm chọn tên của bạn trong danh sách FC:
+                      </label>
+                      {voterName && (
+                        <span className="text-xs text-emerald-400 font-medium">
+                          Đang chọn: <strong className="text-white underline font-bold">{voterName}</strong>
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       {activeRoster.map((player) => {
                         const vote = poll.votes.find(
@@ -557,13 +563,13 @@ ${window.location.href}`;
                               setSelectedRosterPlayer(player);
                               setVoterName(player.name);
                             }}
-                            className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                               isSelected
-                                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/25'
+                                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/50'
                                 : isYes
-                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
                                 : isNo
-                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30'
                                 : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
                             }`}
                           >
@@ -578,70 +584,12 @@ ${window.location.href}`;
                 );
               })()}
 
-              {/* Dropdown to pick from club roster */}
-              <div>
-                <label className="block text-xs text-zinc-400 font-medium mb-1">
-                  Hoặc chọn từ danh sách:
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedRosterPlayer?.id || ''}
-                    onChange={(e) => {
-                      const activeRoster = clubRoster.length > 0 ? clubRoster : INITIAL_ROSTER;
-                      const player = activeRoster.find((p) => p.id === e.target.value);
-                      if (player) {
-                        setSelectedRosterPlayer(player);
-                        setVoterName(player.name);
-                      } else {
-                        setSelectedRosterPlayer(null);
-                      }
-                    }}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white appearance-none focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">-- Chọn thành viên FC hoặc tự nhập bên dưới --</option>
-                    {(clubRoster.length > 0 ? clubRoster : INITIAL_ROSTER).map((player) => {
-                      const isVoted = poll.votes.some(
-                        (v) => v.playerName.toLowerCase() === player.name.toLowerCase()
-                      );
-                      return (
-                        <option key={player.id} value={player.id}>
-                          {player.name} ({player.position}) {isVoted ? '• Đã điểm danh' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-3 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Text input for custom guest name */}
-              <div>
-                <label className="block text-xs text-zinc-400 font-medium mb-1">
-                  Hoặc tự nhập tên của bạn:
-                </label>
-                <input
-                  type="text"
-                  value={voterName}
-                  onChange={(e) => {
-                    setVoterName(e.target.value);
-                    if (selectedRosterPlayer && selectedRosterPlayer.name !== e.target.value) {
-                      setSelectedRosterPlayer(null);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleVote('YES');
-                  }}
-                  placeholder="Ví dụ: Hoàng Long, Tuấn Khang (Khách)..."
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <button
                   onClick={() => handleVote('YES')}
                   disabled={isSubmittingVote || !voterName.trim()}
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>✅ Tôi Tham Gia (Đi đá)</span>
@@ -650,7 +598,7 @@ ${window.location.href}`;
                 <button
                   onClick={() => handleVote('NO')}
                   disabled={isSubmittingVote || !voterName.trim()}
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-zinc-800 hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 disabled:opacity-50 border border-zinc-700 hover:border-rose-500/40 font-semibold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-zinc-800 hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-700 hover:border-rose-500/40 font-semibold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer"
                 >
                   <XCircle className="w-4 h-4" />
                   <span>❌ Báo Bận (Không đi)</span>

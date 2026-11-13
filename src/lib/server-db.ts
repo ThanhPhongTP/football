@@ -377,8 +377,46 @@ export async function getMatchById(id: string): Promise<Match | null> {
 }
 
 export async function saveMatch(match: Match): Promise<Match> {
+  let cleanedTeams = match.teams || [];
+  let isDrawn = match.isDrawn;
+
+  if (cleanedTeams.length > 0 && match.players) {
+    const activeIds = new Set(
+      match.players.filter((p) => p.status === 'IN').map((p) => p.id)
+    );
+    const activeNames = new Set(
+      match.players.filter((p) => p.status === 'IN').map((p) => p.name.trim().toLowerCase())
+    );
+
+    cleanedTeams = cleanedTeams.map((team) => {
+      const validPlayers = team.players.filter(
+        (p) => activeIds.has(p.id) || activeNames.has(p.name.trim().toLowerCase())
+      );
+      const totalRating = validPlayers.reduce((sum, p) => sum + p.rating, 0);
+      const avgRating = validPlayers.length > 0 ? Number((totalRating / validPlayers.length).toFixed(1)) : 0;
+      return {
+        ...team,
+        players: validPlayers,
+        totalRating,
+        avgRating,
+        gkCount: validPlayers.filter((p) => p.position === 'GK').length,
+        defCount: validPlayers.filter((p) => p.position === 'DEF').length,
+        midCount: validPlayers.filter((p) => p.position === 'MID').length,
+        fwdCount: validPlayers.filter((p) => p.position === 'FWD').length,
+      };
+    });
+
+    const totalInTeams = cleanedTeams.reduce((sum, t) => sum + t.players.length, 0);
+    if (totalInTeams === 0) {
+      cleanedTeams = [];
+      isDrawn = false;
+    }
+  }
+
   const updatedMatch: Match = {
     ...match,
+    teams: cleanedTeams,
+    isDrawn: cleanedTeams.length > 0 ? isDrawn : false,
     updatedAt: Date.now(),
   };
 
