@@ -59,14 +59,14 @@ function DrawContent() {
   const { isAdmin, openPasswordModal } = useAdminAuth();
 
   // Match / Draw Info
-  const [title, setTitle] = useState('Nội chiến FC Anh Em');
+  const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('20:00 - 21:30');
-  const [venue, setVenue] = useState('Sân bóng Chuyên Việt (Quận 7)');
+  const [time, setTime] = useState('');
+  const [venue, setVenue] = useState('');
   const [venueMapUrl, setVenueMapUrl] = useState('');
   const [format, setFormat] = useState<'5v5' | '7v7' | '11v11'>('7v7');
   const [numberOfTeams, setNumberOfTeams] = useState<2 | 3 | 4>(2);
-  const [notes, setNotes] = useState('Áo Cam & Xanh dương');
+  const [notes, setNotes] = useState('');
 
   // Player pool
   const [players, setPlayers] = useState<Player[]>([]);
@@ -130,21 +130,23 @@ function DrawContent() {
               const balanced = balanceTeams(pollPlayers, numberOfTeams);
               setTeams(balanced);
               setIsDrawn(true);
+            } else {
+              setTeams([]);
+              setIsDrawn(false);
             }
           }
         })
         .catch(() => { });
     } else {
-      // Default: load club roster
+      // Default: load club roster as unselected (status: 'OUT')
       fetch('/api/players')
         .then((res) => res.json())
         .then((roster: Player[]) => {
           if (Array.isArray(roster) && roster.length > 0) {
-            const initialSelection = roster.slice(0, 14).map((p) => ({ ...p, status: 'IN' as const }));
+            const initialSelection = roster.map((p) => ({ ...p, status: 'OUT' as const }));
             setPlayers(initialSelection);
-            const balanced = balanceTeams(initialSelection, numberOfTeams);
-            setTeams(balanced);
-            setIsDrawn(true);
+            setTeams([]);
+            setIsDrawn(false);
           }
         })
         .catch(() => { });
@@ -618,8 +620,8 @@ function DrawContent() {
                   {activeTab === 'pitch' && (
                     <FootballPitchView
                       teams={teams}
-                      matchTitle={title}
-                      matchInfo={`${date ? `${date} • ` : ''}${time || ''}${venue ? ` • ${venue}` : ''}`}
+                      matchTitle={title || 'Sơ Đồ Thi Đấu'}
+                      matchInfo={[date, time, venue].filter(Boolean).join(' • ')}
                       hideRating={!isAdmin}
                       selectedPlayerForSwap={isAdmin ? selectedPlayerForSwap : null}
                       onSelectPlayerForSwap={isAdmin ? handleSelectPlayerForSwap : undefined}
@@ -649,7 +651,13 @@ function DrawContent() {
                   </div>
                   <h4 className="font-bold text-white text-base">Chưa chia đội</h4>
                   <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                    Hiện đang có <strong className="text-emerald-400">{activePlayers.length} cầu thủ</strong> được chọn. Hãy bấm nút <span className="text-white font-semibold">&quot;⚡ Chia Đội Tự Động&quot;</span> ở góc trên để tạo sa bàn đội hình!
+                    {sourcePoll && activePlayers.length === 0 ? (
+                      <>Đợt điểm danh này chưa có cầu thủ nào xác nhận tham gia (status Có mặt). Hãy chia sẻ link điểm danh để anh em vào xác nhận!</>
+                    ) : activePlayers.length < 2 ? (
+                      <>Cần ít nhất 2 cầu thủ tham gia (status Có mặt) để tiến hành chia đội. Hãy chọn cầu thủ ở danh sách bên trái!</>
+                    ) : (
+                      <>Hiện đang có <strong className="text-emerald-400">{activePlayers.length} cầu thủ</strong> được chọn. Hãy bấm nút <span className="text-white font-semibold">&quot;⚡ Chia Đội Tự Động&quot;</span> ở góc trên để tạo sa bàn đội hình!</>
+                    )}
                   </p>
                 </div>
               )}

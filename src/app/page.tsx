@@ -27,15 +27,15 @@ export default function HomePage() {
   const { isAdmin, openPasswordModal } = useAdminAuth();
 
   // Form states
-  const [title, setTitle] = useState('Nội chiến FC Anh Em - Thứ 5');
+  const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00 - 21:30');
-  const [venue, setVenue] = useState('Sân bóng Chuyên Việt (Quận 7)');
+  const [venue, setVenue] = useState('');
   const [venueMapUrl, setVenueMapUrl] = useState('');
   const [format, setFormat] = useState<'5v5' | '7v7' | '11v11'>('7v7');
   const [targetPlayers, setTargetPlayers] = useState(14);
   const [numberOfTeams, setNumberOfTeams] = useState<2 | 3 | 4>(2);
-  const [notes, setNotes] = useState('Anh em mang 2 áo (Áo Cam & Áo Xanh dương)');
+  const [notes, setNotes] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -227,7 +227,7 @@ export default function HomePage() {
                                   required
                                   value={title}
                                   onChange={(e) => setTitle(e.target.value)}
-                                  placeholder="VD: FC Anh Em - Kèo Thứ 5 Sân Chuyên Việt"
+                                  placeholder="VD: Trận bóng Thứ 5 / Giao hữu Tuần..."
                                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors font-medium"
                                 />
                               </div>
@@ -272,7 +272,7 @@ export default function HomePage() {
                                     type="text"
                                     value={venue}
                                     onChange={(e) => setVenue(e.target.value)}
-                                    placeholder="VD: Sân bóng Chuyên Việt, Quận 7"
+                                    placeholder="VD: Nhập tên sân bóng, địa chỉ..."
                                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
                                   />
                                 </div>
@@ -360,7 +360,7 @@ export default function HomePage() {
                                 type="text"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="VD: Anh em mang áo Cam và áo Xanh, đến trước 15p khởi động"
+                                placeholder="VD: Mang 2 màu áo, đến trước 15p khởi động..."
                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
                               />
                             </div>

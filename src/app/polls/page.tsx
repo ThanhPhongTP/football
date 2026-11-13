@@ -52,11 +52,11 @@ function PollsContent() {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00 - 21:30');
-  const [venue, setVenue] = useState('Sân Chuyên Việt (Quận 7)');
+  const [venue, setVenue] = useState('');
   const [venueMapUrl, setVenueMapUrl] = useState('');
   const [format, setFormat] = useState<'5v5' | '7v7' | '11v11'>('7v7');
   const [targetPlayers, setTargetPlayers] = useState(14);
-  const [notes, setNotes] = useState('Anh em mang 2 áo Cam & Xanh, đến trước 15p khởi động!');
+  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load polls and matches from server
@@ -119,7 +119,6 @@ function PollsContent() {
 
     const today = new Date();
     setDate(today.toISOString().split('T')[0]);
-    setTitle(`Nội chiến Tuần ${getWeekNumber(today)} - FC Anh Em`);
   }, [matchIdParam]);
 
   const handleFormatChange = (newFormat: '5v5' | '7v7' | '11v11') => {
@@ -550,7 +549,7 @@ ${pollUrl}`;
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="VD: Nội chiến Thứ 5 - FC Anh Em"
+                        placeholder="VD: Điểm danh trận Thứ 5 / Giao hữu Tuần..."
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-500"
                         required
                       />
@@ -606,7 +605,7 @@ ${pollUrl}`;
                           type="text"
                           value={venue}
                           onChange={(e) => setVenue(e.target.value)}
-                          placeholder="VD: Sân Chuyên Việt (Q7)"
+                          placeholder="VD: Sân bóng cỏ nhân tạo..."
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>

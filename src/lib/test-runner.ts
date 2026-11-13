@@ -69,7 +69,7 @@ const dummyMatch: Match = {
   title: 'FC Anh Em vs Bạn Hữu',
   date: '2026-11-05',
   time: '20:00 - 21:30',
-  venue: 'Sân Chuyên Việt, Q7',
+  venue: 'Sân bóng cỏ nhân tạo',
   format: '7v7',
   targetPlayers: 14,
   numberOfTeams: 2,
