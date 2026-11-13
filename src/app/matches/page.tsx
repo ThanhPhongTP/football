@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { useClubStore } from '@/lib/club-store';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Match, GoalEvent, AssistEvent } from '@/types/football';
 import {
   Calendar,
@@ -19,9 +20,11 @@ import {
   Check,
   X,
   Edit3,
+  Lock,
 } from 'lucide-react';
 
 export default function MatchesPage() {
+  const { isAdmin, openPasswordModal } = useAdminAuth();
   const { matches, roster, recordMatchResult } = useClubStore();
   const [filter, setFilter] = useState<'ALL' | 'UPCOMING' | 'COMPLETED'>('ALL');
   const [recordingMatch, setRecordingMatch] = useState<Match | null>(null);
@@ -128,44 +131,51 @@ export default function MatchesPage() {
             </p>
           </div>
 
-          <Link
-            href="/"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tạo trận mới</span>
-          </Link>
+          {isAdmin ? (
+            <Link
+              href="/draw"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Tạo trận mới</span>
+            </Link>
+          ) : (
+            <button
+              onClick={openPasswordModal}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Đội trưởng đăng nhập</span>
+            </button>
+          )}
         </div>
 
         {/* Filter Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-xl border border-zinc-800 max-w-sm text-xs">
           <button
             onClick={() => setFilter('ALL')}
-            className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${
-              filter === 'ALL'
+            className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${filter === 'ALL'
                 ? 'bg-emerald-500 text-zinc-950 shadow-md'
                 : 'text-zinc-400 hover:text-white'
-            }`}
+              }`}
           >
             Tất cả ({matches.length})
           </button>
           <button
             onClick={() => setFilter('UPCOMING')}
-            className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${
-              filter === 'UPCOMING'
+            className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${filter === 'UPCOMING'
                 ? 'bg-emerald-500 text-zinc-950 shadow-md'
                 : 'text-zinc-400 hover:text-white'
-            }`}
+              }`}
           >
             Sắp đá ({matches.filter((m) => m.status !== 'COMPLETED').length})
           </button>
           <button
             onClick={() => setFilter('COMPLETED')}
-            className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${
-              filter === 'COMPLETED'
+            className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${filter === 'COMPLETED'
                 ? 'bg-emerald-500 text-zinc-950 shadow-md'
                 : 'text-zinc-400 hover:text-white'
-            }`}
+              }`}
           >
             Đã xong ({matches.filter((m) => m.status === 'COMPLETED').length})
           </button>
@@ -200,11 +210,10 @@ export default function MatchesPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                            isCompleted
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${isCompleted
                               ? 'bg-zinc-800 text-zinc-300'
                               : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          }`}
+                            }`}
                         >
                           {isCompleted ? 'Đã kết thúc' : 'Sắp diễn ra'}
                         </span>
@@ -216,13 +225,24 @@ export default function MatchesPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenRecordModal(m)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{isCompleted ? 'Sửa tỷ số' : 'Nhập tỷ số'}</span>
-                      </button>
+                      {isAdmin ? (
+                        <button
+                          onClick={() => handleOpenRecordModal(m)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{isCompleted ? 'Sửa tỷ số' : 'Nhập tỷ số'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={openPasswordModal}
+                          title="Nhập mật khẩu để mở quyền nhập tỷ số"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium border border-zinc-800 transition-colors cursor-pointer"
+                        >
+                          <Lock className="w-3 h-3 text-zinc-500" />
+                          <span>Đội trưởng nhập điểm</span>
+                        </button>
+                      )}
 
                       <Link
                         href={`/match/${m.id}`}

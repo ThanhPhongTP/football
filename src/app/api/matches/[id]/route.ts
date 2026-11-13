@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getMatchById, saveMatch } from '@/lib/server-db';
 import { Match } from '@/types/football';
 
-// In-memory store for server-side persistence during session
-const matchStore = new Map<string, Match>();
-
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const match = matchStore.get(id);
+  const match = await getMatchById(id);
 
   if (!match) {
     return NextResponse.json({ error: 'Match not found' }, { status: 404 });
@@ -27,10 +25,25 @@ export async function POST(
     const data: Match = await request.json();
     data.id = id;
     data.updatedAt = Date.now();
-    matchStore.set(id, data);
-    return NextResponse.json({ success: true, match: data });
+    const saved = await saveMatch(data);
+    return NextResponse.json({ success: true, match: saved });
   } catch {
     return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
   }
 }
 
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  try {
+    const data: Match = await request.json();
+    data.id = id;
+    data.updatedAt = Date.now();
+    const saved = await saveMatch(data);
+    return NextResponse.json({ success: true, match: saved });
+  } catch {
+    return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+  }
+}

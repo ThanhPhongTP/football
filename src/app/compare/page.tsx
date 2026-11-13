@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useClubStore } from '@/lib/club-store';
 import { Player, POSITION_LABELS } from '@/types/football';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 import {
   Scale,
   Star,
@@ -17,6 +18,7 @@ import {
 
 export default function ComparePage() {
   const { roster } = useClubStore();
+  const { isAdmin } = useAdminAuth();
 
   const [playerAId, setPlayerAId] = useState<string>(roster[7]?.id || roster[0]?.id || '');
   const [playerBId, setPlayerBId] = useState<string>(roster[9]?.id || roster[1]?.id || '');
@@ -37,12 +39,16 @@ export default function ComparePage() {
     p && p.matchesPlayed > 0 ? (p.goals / p.matchesPlayed).toFixed(2) : '0.00';
 
   const metrics = [
-    {
-      label: '⭐ Điểm trình độ (Rating)',
-      valA: playerA?.rating || 0,
-      valB: playerB?.rating || 0,
-      suffix: '/10',
-    },
+    ...(isAdmin
+      ? [
+        {
+          label: '⭐ Điểm trình độ (Rating)',
+          valA: playerA?.rating || 0,
+          valB: playerB?.rating || 0,
+          suffix: '/10',
+        },
+      ]
+      : []),
     {
       label: '⚽ Bàn thắng (Goals)',
       valA: playerA?.goals || 0,
@@ -188,9 +194,8 @@ export default function ComparePage() {
                 <div key={idx} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span
-                      className={`font-mono font-bold ${
-                        isAWinner ? 'text-emerald-400' : 'text-zinc-400'
-                      }`}
+                      className={`font-mono font-bold ${isAWinner ? 'text-emerald-400' : 'text-zinc-400'
+                        }`}
                     >
                       {m.valA} {m.suffix}
                     </span>
@@ -198,9 +203,8 @@ export default function ComparePage() {
                       {m.label}
                     </span>
                     <span
-                      className={`font-mono font-bold ${
-                        isBWinner ? 'text-teal-400' : 'text-zinc-400'
-                      }`}
+                      className={`font-mono font-bold ${isBWinner ? 'text-teal-400' : 'text-zinc-400'
+                        }`}
                     >
                       {m.valB} {m.suffix}
                     </span>
@@ -211,9 +215,8 @@ export default function ComparePage() {
                     {/* Left Bar (A) - aligns right */}
                     <div className="flex justify-end">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isAWinner ? 'bg-orange-500' : 'bg-zinc-700'
-                        }`}
+                        className={`h-full rounded-full transition-all duration-500 ${isAWinner ? 'bg-orange-500' : 'bg-zinc-700'
+                          }`}
                         style={{ width: `${(m.valA / maxVal) * 100}%` }}
                       />
                     </div>
@@ -221,9 +224,8 @@ export default function ComparePage() {
                     {/* Right Bar (B) - aligns left */}
                     <div className="flex justify-start">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isBWinner ? 'bg-blue-500' : 'bg-zinc-700'
-                        }`}
+                        className={`h-full rounded-full transition-all duration-500 ${isBWinner ? 'bg-blue-500' : 'bg-zinc-700'
+                          }`}
                         style={{ width: `${(m.valB / maxVal) * 100}%` }}
                       />
                     </div>

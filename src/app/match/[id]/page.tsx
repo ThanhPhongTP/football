@@ -11,6 +11,7 @@ import QuickPasteModal from '@/components/QuickPasteModal';
 import FootballPitchView from '@/components/FootballPitchView';
 import TeamCard from '@/components/TeamCard';
 import confetti from 'canvas-confetti';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 import {
   Users,
   Copy,
@@ -53,6 +54,7 @@ export default function MatchRoomPage({ params }: { params: Promise<{ id: string
 function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const matchId = resolvedParams.id;
+  const { isAdmin, openPasswordModal } = useAdminAuth();
 
   const { match, saveMatch, isSyncing, isCloudEnabled } = useMatchSync(matchId);
 
@@ -118,6 +120,10 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   // Handle Delete Player
   const handleDeletePlayer = (playerId: string) => {
     if (!match) return;
+    if (!isAdmin) {
+      openPasswordModal();
+      return;
+    }
     if (confirm('Bạn có chắc muốn xóa cầu thủ này khỏi danh sách?')) {
       const updatedList = match.players.filter((p) => p.id !== playerId);
       saveMatch({
@@ -194,6 +200,10 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   // Execute Auto Team Balancing
   const handleDrawTeams = (randomize: boolean = true) => {
     if (!match) return;
+    if (!isAdmin) {
+      openPasswordModal();
+      return;
+    }
 
     if (activePlayers.length < 2) {
       alert('Cần ít nhất 2 cầu thủ tham gia (status IN) để tiến hành chia đội!');
@@ -228,6 +238,10 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   // Handle Player Swap
   const handleSelectPlayerForSwap = (player: Player) => {
     if (!match) return;
+    if (!isAdmin) {
+      openPasswordModal();
+      return;
+    }
 
     if (!selectedPlayerForSwap) {
       setSelectedPlayerForSwap(player);
@@ -363,11 +377,10 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button
                 onClick={handleCopyLink}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-lg active:scale-95 ${
-                  copiedLink
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-lg active:scale-95 ${copiedLink
                     ? 'bg-emerald-500 text-zinc-950'
                     : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'
-                }`}
+                  }`}
               >
                 {copiedLink ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Share2 className="w-4 h-4" />}
                 <span>{copiedLink ? 'Đã sao chép link!' : 'Copy link gửi Zalo'}</span>
@@ -381,11 +394,10 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-zinc-200">Tiến độ điểm danh:</span>
                 <span
-                  className={`font-bold px-2 py-0.5 rounded-md ${
-                    isEnoughPlayers
+                  className={`font-bold px-2 py-0.5 rounded-md ${isEnoughPlayers
                       ? 'bg-emerald-500/20 text-emerald-400'
                       : 'bg-amber-500/20 text-amber-400'
-                  }`}
+                    }`}
                 >
                   {activePlayers.length} / {attendanceTarget} cầu thủ
                 </span>
@@ -403,9 +415,8 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
             {/* Progress track */}
             <div className="w-full bg-zinc-950 h-2.5 rounded-full overflow-hidden border border-zinc-800">
               <div
-                className={`h-full transition-all duration-500 rounded-full ${
-                  isEnoughPlayers ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-emerald-400'
-                }`}
+                className={`h-full transition-all duration-500 rounded-full ${isEnoughPlayers ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-emerald-400'
+                  }`}
                 style={{
                   width: `${Math.min(100, (activePlayers.length / attendanceTarget) * 100)}%`,
                 }}
@@ -487,18 +498,28 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   onClick={() => {
+                    if (!isAdmin) {
+                      openPasswordModal();
+                      return;
+                    }
                     setEditingPlayer(null);
                     setIsAddPlayerOpen(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold border border-zinc-700/80 transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold border border-zinc-700/80 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
                   <span>+ Thêm cầu thủ</span>
                 </button>
 
                 <button
-                  onClick={() => setIsQuickPasteOpen(true)}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold border border-zinc-700/80 transition-colors"
+                  onClick={() => {
+                    if (!isAdmin) {
+                      openPasswordModal();
+                      return;
+                    }
+                    setIsQuickPasteOpen(true);
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold border border-zinc-700/80 transition-colors cursor-pointer"
                 >
                   <ClipboardList className="w-3.5 h-3.5 text-teal-400" />
                   <span>📋 Dán từ Zalo</span>
@@ -509,31 +530,28 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-xl border border-zinc-800 mb-3 text-xs">
                 <button
                   onClick={() => setAttendanceFilter('ALL')}
-                  className={`flex-1 py-1.5 rounded-lg font-medium transition-colors ${
-                    attendanceFilter === 'ALL'
+                  className={`flex-1 py-1.5 rounded-lg font-medium transition-colors ${attendanceFilter === 'ALL'
                       ? 'bg-zinc-800 text-white shadow-sm'
                       : 'text-zinc-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   Tất cả ({match.players.length})
                 </button>
                 <button
                   onClick={() => setAttendanceFilter('IN')}
-                  className={`flex-1 py-1.5 rounded-lg font-semibold transition-colors ${
-                    attendanceFilter === 'IN'
+                  className={`flex-1 py-1.5 rounded-lg font-semibold transition-colors ${attendanceFilter === 'IN'
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : 'text-zinc-400 hover:text-emerald-400'
-                  }`}
+                    }`}
                 >
                   Đi ({activePlayers.length})
                 </button>
                 <button
                   onClick={() => setAttendanceFilter('OUT')}
-                  className={`flex-1 py-1.5 rounded-lg font-semibold transition-colors ${
-                    attendanceFilter === 'OUT'
+                  className={`flex-1 py-1.5 rounded-lg font-semibold transition-colors ${attendanceFilter === 'OUT'
                       ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                       : 'text-zinc-400 hover:text-rose-400'
-                  }`}
+                    }`}
                 >
                   Vắng ({outPlayers.length})
                 </button>
@@ -553,22 +571,20 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                     return (
                       <div
                         key={player.id}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                          isIn
+                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${isIn
                             ? 'bg-zinc-950/80 border-zinc-800 hover:border-zinc-700'
                             : 'bg-zinc-950/40 border-zinc-900 opacity-60'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           {/* Toggle In/Out Button */}
                           <button
                             onClick={() => handleToggleStatus(player)}
                             title={isIn ? 'Bấm để báo vắng' : 'Bấm để báo tham gia'}
-                            className={`p-1 rounded-lg transition-transform active:scale-90 ${
-                              isIn
+                            className={`p-1 rounded-lg transition-transform active:scale-90 ${isIn
                                 ? 'text-emerald-400 hover:bg-emerald-500/10'
                                 : 'text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10'
-                            }`}
+                              }`}
                           >
                             {isIn ? (
                               <CheckCircle2 className="w-5 h-5 fill-emerald-500/20" />
@@ -594,28 +610,32 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
 
                         {/* Rating & Actions */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-xs font-semibold text-amber-400 flex items-center gap-0.5 mr-1">
-                            <Star className="w-3 h-3 fill-amber-400" />
-                            <span>{player.rating}</span>
-                          </span>
+                          {isAdmin && (
+                            <>
+                              <span className="text-xs font-semibold text-amber-400 flex items-center gap-0.5 mr-1">
+                                <Star className="w-3 h-3 fill-amber-400" />
+                                <span>{player.rating}</span>
+                              </span>
 
-                          <button
-                            onClick={() => {
-                              setEditingPlayer(player);
-                              setIsAddPlayerOpen(true);
-                            }}
-                            className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
-                            title="Sửa"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePlayer(player.id)}
-                            className="p-1 rounded text-zinc-500 hover:text-rose-400 hover:bg-zinc-800"
-                            title="Xóa"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                              <button
+                                onClick={() => {
+                                  setEditingPlayer(player);
+                                  setIsAddPlayerOpen(true);
+                                }}
+                                className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 cursor-pointer"
+                                title="Sửa"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePlayer(player.id)}
+                                className="p-1 rounded text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 cursor-pointer"
+                                title="Xóa"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -646,172 +666,186 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                   {([2, 3, 4] as const).map((num) => (
                     <button
                       key={num}
-                      onClick={() =>
-                        saveMatch({
-                          ...match,
-                          numberOfTeams: num,
-                        })
-                      }
-                      className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                        match.numberOfTeams === num
-                          ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
+                        onClick = {() => {
+                        if (!isAdmin) {
+                    openPasswordModal();
+                  return;
+                        }
+                  saveMatch({
+                    ...match,
+                    numberOfTeams: num,
+                        });
+                      }}
+                      className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    match.numberOfTeams === num
+                      ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
                     >
-                      {num} đội
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons: DRAW / RE-ROLL */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  onClick={() => handleDrawTeams(true)}
-                  disabled={activePlayers.length < 2}
-                  className="flex-1 flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50 text-zinc-950 font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-500/25 transition-all transform active:scale-98 cursor-pointer"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  <span>⚡ Chia Đội Tự Động</span>
+                  {num} đội
                 </button>
-
-                {match.isDrawn && (
-                  <button
-                    onClick={() => handleDrawTeams(true)}
-                    className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs border border-zinc-700 transition-colors"
-                  >
-                    <RefreshCw className="w-4 h-4 text-emerald-400" />
-                    <span>Xáo lại (Re-roll)</span>
-                  </button>
-                )}
+                  ))}
               </div>
+            </div>
 
-              {/* Swap Helper Notice */}
-              {selectedPlayerForSwap && (
-                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between animate-pulse">
-                  <span>
-                    🔄 Đang chọn: <strong>{selectedPlayerForSwap.name}</strong>. Hãy bấm vào một cầu thủ ở đội khác để đổi chỗ!
-                  </span>
-                  <button
-                    onClick={() => setSelectedPlayerForSwap(null)}
-                    className="text-xs underline text-amber-400"
-                  >
-                    Hủy
-                  </button>
-                </div>
+            {/* Action Buttons: DRAW / RE-ROLL */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button
+                onClick={() => {
+                  if (!isAdmin) {
+                    openPasswordModal();
+                    return;
+                  }
+                  handleDrawTeams(true);
+                }}
+                disabled={activePlayers.length < 2}
+                className="flex-1 flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50 text-zinc-950 font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-500/25 transition-all transform active:scale-98 cursor-pointer"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>⚡ Chia Đội Tự Động</span>
+              </button>
+
+              {match.isDrawn && (
+                <button
+                  onClick={() => {
+                    if (!isAdmin) {
+                      openPasswordModal();
+                      return;
+                    }
+                    handleDrawTeams(true);
+                  }}
+                  className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs border border-zinc-700 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4 text-emerald-400" />
+                  <span>Xáo lại (Re-roll)</span>
+                </button>
               )}
             </div>
 
-            {/* Results Section */}
-            {match.isDrawn && match.teams && match.teams.length > 0 ? (
-              <div className="space-y-4">
-                {/* View Switcher & Export Toolbar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  {/* Tabs: Sa bàn sân cỏ vs Thẻ danh sách */}
-                  <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-2xl border border-zinc-800 text-xs">
-                    <button
-                      onClick={() => setActiveTab('pitch')}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all ${
-                        activeTab === 'pitch'
-                          ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Layers className="w-4 h-4" />
-                      <span>Sa bàn sân cỏ</span>
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('cards')}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all ${
-                        activeTab === 'cards'
-                          ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Shield className="w-4 h-4" />
-                      <span>Thẻ các đội</span>
-                    </button>
-                  </div>
-
-                  {/* Export Buttons */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleCopyZaloText}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                        copiedText
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                          : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800'
-                      }`}
-                    >
-                      {copiedText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedText ? 'Đã copy text Zalo!' : 'Copy Text Zalo'}</span>
-                    </button>
-
-                    <button
-                      onClick={handleDownloadImage}
-                      disabled={isExportingImage}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
-                    >
-                      <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>{isExportingImage ? 'Đang tạo ảnh...' : 'Tải ảnh PNG'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Tab 1: Realistic Pitch View */}
-                {activeTab === 'pitch' && (
-                  <FootballPitchView
-                    teams={match.teams}
-                    matchTitle={match.title}
-                    matchInfo={`${match.date ? `${match.date} • ` : ''}${match.time || ''}${match.venue ? ` • ${match.venue}` : ''}`}
-                  />
-                )}
-
-                {/* Tab 2: Interactive Squad Cards */}
-                {activeTab === 'cards' && (
-                  <div className={`grid grid-cols-1 ${match.teams.length > 2 ? 'md:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-                    {match.teams.map((team) => (
-                      <TeamCard
-                        key={team.id}
-                        team={team}
-                        selectedPlayerForSwap={selectedPlayerForSwap}
-                        onSelectPlayerForSwap={handleSelectPlayerForSwap}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-12 text-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/50 space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700 mx-auto flex items-center justify-center text-2xl">
-                  ⚽
-                </div>
-                <h4 className="font-bold text-white text-base">Chưa chia đội</h4>
-                <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                  Hiện đang có <strong className="text-emerald-400">{activePlayers.length} cầu thủ</strong> xác nhận tham gia. Hãy bấm nút <span className="text-white font-semibold">&quot;Chia Đội Tự Động&quot;</span> ở trên để tạo sa bàn thi đấu!
-                </p>
+            {/* Swap Helper Notice */}
+            {selectedPlayerForSwap && (
+              <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between animate-pulse">
+                <span>
+                  🔄 Đang chọn: <strong>{selectedPlayerForSwap.name}</strong>. Hãy bấm vào một cầu thủ ở đội khác để đổi chỗ!
+                </span>
+                <button
+                  onClick={() => setSelectedPlayerForSwap(null)}
+                  className="text-xs underline text-amber-400"
+                >
+                  Hủy
+                </button>
               </div>
             )}
           </div>
+
+          {/* Results Section */}
+          {match.isDrawn && match.teams && match.teams.length > 0 ? (
+            <div className="space-y-4">
+              {/* View Switcher & Export Toolbar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Tabs: Sa bàn sân cỏ vs Thẻ danh sách */}
+                <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-2xl border border-zinc-800 text-xs">
+                  <button
+                    onClick={() => setActiveTab('pitch')}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all ${activeTab === 'pitch'
+                        ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                        : 'text-zinc-400 hover:text-white'
+                      }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>Sa bàn sân cỏ</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('cards')}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all ${activeTab === 'cards'
+                        ? 'bg-emerald-500 text-zinc-950 shadow-md'
+                        : 'text-zinc-400 hover:text-white'
+                      }`}
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>Thẻ các đội</span>
+                  </button>
+                </div>
+
+                {/* Export Buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopyZaloText}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${copiedText
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                        : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800'
+                      }`}
+                  >
+                    {copiedText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedText ? 'Đã copy text Zalo!' : 'Copy Text Zalo'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleDownloadImage}
+                    disabled={isExportingImage}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>{isExportingImage ? 'Đang tạo ảnh...' : 'Tải ảnh PNG'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Tab 1: Realistic Pitch View */}
+              {activeTab === 'pitch' && (
+                <FootballPitchView
+                  teams={match.teams}
+                  matchTitle={match.title}
+                  matchInfo={`${match.date ? `${match.date} • ` : ''}${match.time || ''}${match.venue ? ` • ${match.venue}` : ''}`}
+                />
+              )}
+
+              {/* Tab 2: Interactive Squad Cards */}
+              {activeTab === 'cards' && (
+                <div className={`grid grid-cols-1 ${match.teams.length > 2 ? 'md:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
+                  {match.teams.map((team) => (
+                    <TeamCard
+                      key={team.id}
+                      team={team}
+                      selectedPlayerForSwap={selectedPlayerForSwap}
+                      onSelectPlayerForSwap={handleSelectPlayerForSwap}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-12 text-center rounded-3xl border border-dashed border-zinc-800 bg-zinc-900/50 space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700 mx-auto flex items-center justify-center text-2xl">
+                ⚽
+              </div>
+              <h4 className="font-bold text-white text-base">Chưa chia đội</h4>
+              <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                Hiện đang có <strong className="text-emerald-400">{activePlayers.length} cầu thủ</strong> xác nhận tham gia. Hãy bấm nút <span className="text-white font-semibold">&quot;Chia Đội Tự Động&quot;</span> ở trên để tạo sa bàn thi đấu!
+              </p>
+            </div>
+          )}
         </div>
-      </main>
-
-      {/* Modals */}
-      <AddPlayerModal
-        isOpen={isAddPlayerOpen}
-        onClose={() => {
-          setIsAddPlayerOpen(false);
-          setEditingPlayer(null);
-        }}
-        onAdd={handleSavePlayer}
-        initialPlayer={editingPlayer}
-      />
-
-      <QuickPasteModal
-        isOpen={isQuickPasteOpen}
-        onClose={() => setIsQuickPasteOpen(false)}
-        onImport={handleQuickPaste}
-      />
     </div>
+      </main >
+
+    {/* Modals */ }
+    < AddPlayerModal
+  isOpen = { isAddPlayerOpen }
+  onClose = {() => {
+    setIsAddPlayerOpen(false);
+    setEditingPlayer(null);
+  }
+}
+onAdd = { handleSavePlayer }
+initialPlayer = { editingPlayer }
+  />
+
+  <QuickPasteModal
+    isOpen={isQuickPasteOpen}
+    onClose={() => setIsQuickPasteOpen(false)}
+    onImport={handleQuickPaste}
+  />
+    </div >
   );
 }

@@ -61,6 +61,31 @@ export interface MatchCost {
   accountHolder?: string;
 }
 
+export interface PollVote {
+  id: string;
+  playerName: string;
+  playerId?: string;
+  status: 'YES' | 'NO' | 'MAYBE';
+  position?: Position;
+  rating?: number;
+  updatedAt: number;
+}
+
+export interface AttendancePoll {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  format: '5v5' | '7v7' | '11v11';
+  targetPlayers: number;
+  notes?: string;
+  status: 'OPEN' | 'CLOSED';
+  votes: PollVote[];
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Team {
   id: number;
   name: string;

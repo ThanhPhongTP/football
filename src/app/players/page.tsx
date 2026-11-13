@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import { useClubStore } from '@/lib/club-store';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Player, Position, POSITION_LABELS } from '@/types/football';
 import {
   Users,
@@ -17,9 +18,11 @@ import {
   Trash2,
   ArrowUpDown,
   Filter,
+  Lock,
 } from 'lucide-react';
 
 export default function PlayersPage() {
+  const { isAdmin, openPasswordModal } = useAdminAuth();
   const { roster, upsertPlayer, deletePlayer } = useClubStore();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,16 +92,26 @@ export default function PlayersPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              setEditingPlayer(null);
-              setIsAddModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all self-start sm:self-auto cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4 stroke-[2.5]" />
-            <span>Thêm thành viên mới</span>
-          </button>
+          {isAdmin ? (
+            <button
+              onClick={() => {
+                setEditingPlayer(null);
+                setIsAddModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all self-start sm:self-auto cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 stroke-[2.5]" />
+              <span>Thêm thành viên mới</span>
+            </button>
+          ) : (
+            <button
+              onClick={openPasswordModal}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Đội trưởng quản lý</span>
+            </button>
+          )}
         </div>
 
         {/* Toolbar: Search, Position Filter, Sort */}
@@ -121,11 +134,10 @@ export default function PlayersPage() {
               <button
                 key={pos}
                 onClick={() => setSelectedPosition(pos)}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${
-                  selectedPosition === pos
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${selectedPosition === pos
                     ? 'bg-emerald-500 text-zinc-950 shadow-md'
                     : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
-                }`}
+                  }`}
               >
                 {pos === 'ALL' ? 'Tất cả' : pos}
               </button>
@@ -143,7 +155,7 @@ export default function PlayersPage() {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
             >
-              <option value="rating">⭐ Điểm Rating</option>
+              {isAdmin && <option value="rating">⭐ Điểm Rating</option>}
               <option value="goals">⚽ Bàn thắng (Nhiều nhất)</option>
               <option value="assists">👟 Kiến tạo (Nhiều nhất)</option>
               <option value="matches">🏃 Số trận thi đấu</option>
@@ -185,34 +197,38 @@ export default function PlayersPage() {
                         >
                           {posMeta.label}
                         </span>
-                        <span className="text-xs text-amber-400 font-bold flex items-center gap-0.5">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{player.rating}/10</span>
-                        </span>
+                        {isAdmin && (
+                          <span className="text-xs text-amber-400 font-bold flex items-center gap-0.5">
+                            <Star className="w-3.5 h-3.5 fill-amber-400" />
+                            <span>{player.rating}/10</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => {
-                        setEditingPlayer(player);
-                        setIsAddModalOpen(true);
-                      }}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
-                      title="Chỉnh sửa"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(player.id, player.name)}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-800"
-                      title="Xóa"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {/* Actions (Admin only) */}
+                  {isAdmin && (
+                    <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setEditingPlayer(player);
+                          setIsAddModalOpen(true);
+                        }}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+                        title="Chỉnh sửa"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(player.id, player.name)}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-800"
+                        title="Xóa"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats Matrix */}

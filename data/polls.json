@@ -1,0 +1,107 @@
+[
+  {
+    "id": "poll-derby-thu-5",
+    "title": "Trận Bóng Tuần 46 - FC Anh Em",
+    "date": "2026-11-19",
+    "time": "20:00 - 21:30",
+    "venue": "Sân Chuyên Việt (Quận 7)",
+    "format": "7v7",
+    "targetPlayers": 14,
+    "notes": "Anh em mang 2 áo (Cam & Xanh). Đến trước 15p khởi động nhé!",
+    "status": "OPEN",
+    "votes": [
+      {
+        "id": "v_1",
+        "playerName": "Quang Hải",
+        "playerId": "p_8",
+        "status": "YES",
+        "position": "MID",
+        "rating": 10,
+        "updatedAt": 1794574503925
+      },
+      {
+        "id": "v_2",
+        "playerName": "Hoàng Đức",
+        "playerId": "p_10",
+        "status": "YES",
+        "position": "MID",
+        "rating": 10,
+        "updatedAt": 1794575103925
+      },
+      {
+        "id": "v_3",
+        "playerName": "Tiến Linh",
+        "playerId": "p_12",
+        "status": "YES",
+        "position": "FWD",
+        "rating": 9,
+        "updatedAt": 1794575603925
+      },
+      {
+        "id": "v_4",
+        "playerName": "Tuấn Hải",
+        "playerId": "p_13",
+        "status": "YES",
+        "position": "FWD",
+        "rating": 9,
+        "updatedAt": 1794576103925
+      },
+      {
+        "id": "v_5",
+        "playerName": "Hùng Dũng",
+        "playerId": "p_9",
+        "status": "YES",
+        "position": "MID",
+        "rating": 9,
+        "updatedAt": 1794576303925
+      },
+      {
+        "id": "v_6",
+        "playerName": "Quế Ngọc Hải",
+        "playerId": "p_4",
+        "status": "YES",
+        "position": "DEF",
+        "rating": 9,
+        "updatedAt": 1794576603925
+      },
+      {
+        "id": "v_7",
+        "playerName": "Bùi Tiến Dũng",
+        "playerId": "p_7",
+        "status": "YES",
+        "position": "DEF",
+        "rating": 8,
+        "updatedAt": 1794576903925
+      },
+      {
+        "id": "v_8",
+        "playerName": "Đặng Văn Lâm",
+        "playerId": "p_2",
+        "status": "YES",
+        "position": "GK",
+        "rating": 9,
+        "updatedAt": 1794577103925
+      },
+      {
+        "id": "v_9",
+        "playerName": "Thành Chung",
+        "playerId": "p_6",
+        "status": "YES",
+        "position": "DEF",
+        "rating": 8,
+        "updatedAt": 1794577303925
+      },
+      {
+        "id": "v_10",
+        "playerName": "Công Phượng",
+        "playerId": "p_14",
+        "status": "NO",
+        "position": "FWD",
+        "rating": 8,
+        "updatedAt": 1794577503925
+      }
+    ],
+    "createdAt": 1794491703925,
+    "updatedAt": 1794578103925
+  }
+]
