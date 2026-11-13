@@ -274,6 +274,7 @@ export default function PlayersPage() {
 
       {/* Modal */}
       <AddPlayerModal
+        key={editingPlayer?.id || (isAddModalOpen ? 'new_player' : 'closed')}
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);

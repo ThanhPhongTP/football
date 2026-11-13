@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, UserPlus, Star, Shield, Crosshair } from 'lucide-react';
 import { Player, Position, POSITION_LABELS } from '@/types/football';
 
@@ -16,6 +16,21 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
   const [position, setPosition] = useState<Position>(initialPlayer?.position || 'MID');
   const [rating, setRating] = useState<number>(initialPlayer?.rating || 7);
   const [status, setStatus] = useState<'IN' | 'OUT'>(initialPlayer?.status === 'OUT' ? 'OUT' : 'IN');
+
+  // Sync state whenever initialPlayer or isOpen changes so edit always gets the correct player
+  useEffect(() => {
+    if (initialPlayer) {
+      setName(initialPlayer.name || '');
+      setPosition(initialPlayer.position || 'MID');
+      setRating(initialPlayer.rating || 7);
+      setStatus(initialPlayer.status === 'OUT' ? 'OUT' : 'IN');
+    } else {
+      setName('');
+      setPosition('MID');
+      setRating(7);
+      setStatus('IN');
+    }
+  }, [initialPlayer, isOpen]);
 
   if (!isOpen) return null;
 

@@ -29,6 +29,17 @@ export function useClubStore() {
     }
     setRoster(savedRoster);
 
+    // Sync latest roster from Cloud API / Firestore
+    fetch('/api/players')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cloudPlayers) => {
+        if (Array.isArray(cloudPlayers) && cloudPlayers.length > 0) {
+          setRoster(cloudPlayers);
+          localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(cloudPlayers));
+        }
+      })
+      .catch(() => {});
+
     let savedMatches: Match[] = [];
     const rawMatches = localStorage.getItem(MATCHES_STORAGE_KEY);
     if (rawMatches) {
@@ -122,11 +133,17 @@ export function useClubStore() {
     setIsLoaded(true);
   }, []);
 
-  // Save Roster
+  // Save Roster (Local storage + Sync Cloud Firestore)
   const saveRoster = useCallback((newRoster: Player[]) => {
     setRoster(newRoster);
     if (typeof window !== 'undefined') {
       localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(newRoster));
+      // Auto-push to API / Cloud Firestore
+      fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRoster),
+      }).catch((err) => console.warn('Could not sync roster to cloud:', err));
     }
   }, []);
 

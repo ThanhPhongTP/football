@@ -827,19 +827,19 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
           )}
         </div>
     </div>
-      </main >
+      </main>
 
-    {/* Modals */ }
-    < AddPlayerModal
-  isOpen = { isAddPlayerOpen }
-  onClose = {() => {
-    setIsAddPlayerOpen(false);
-    setEditingPlayer(null);
-  }
-}
-onAdd = { handleSavePlayer }
-initialPlayer = { editingPlayer }
-  />
+      {/* Modals */}
+      <AddPlayerModal
+        key={editingPlayer?.id || (isAddPlayerOpen ? 'new' : 'closed')}
+        isOpen={isAddPlayerOpen}
+        onClose={() => {
+          setIsAddPlayerOpen(false);
+          setEditingPlayer(null);
+        }}
+        onAdd={handleSavePlayer}
+        initialPlayer={editingPlayer}
+      />
 
   <QuickPasteModal
     isOpen={isQuickPasteOpen}
