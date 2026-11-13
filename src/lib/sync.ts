@@ -54,14 +54,31 @@ export function useMatchSync(matchId: string, initialMatch?: Match | null) {
     } else {
       setIsCloudEnabled(false);
       // Read from local storage
+      let foundMatch: Match | null = null;
       const localData = localStorage.getItem(`footdraw_match_${matchId}`);
       if (localData) {
         try {
-          const parsed = JSON.parse(localData);
-          setMatch(parsed);
+          foundMatch = JSON.parse(localData);
         } catch {
           // ignore error
         }
+      }
+
+      if (!foundMatch) {
+        const clubMatchesRaw = localStorage.getItem('footdraw_club_matches');
+        if (clubMatchesRaw) {
+          try {
+            const list: Match[] = JSON.parse(clubMatchesRaw);
+            const m = list.find((item) => item.id === matchId);
+            if (m) foundMatch = m;
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      if (foundMatch) {
+        setMatch(foundMatch);
       }
 
       // Try fetching from internal Next.js API
@@ -78,6 +95,32 @@ export function useMatchSync(matchId: string, initialMatch?: Match | null) {
           }
         })
         .catch(() => {});
+
+      // Fallback: If after 1 second match is still null, generate a clean default match
+      const fallbackTimer = setTimeout(() => {
+        setMatch((prev) => {
+          if (prev) return prev;
+          const freshMatch: Match = {
+            id: matchId,
+            title: `Trận đấu phòng #${matchId.substring(0, 8)}`,
+            date: new Date().toISOString().split('T')[0],
+            time: '20:00 - 21:30',
+            venue: 'Sân bóng phủi',
+            format: '7v7',
+            targetPlayers: 14,
+            numberOfTeams: 2,
+            status: 'SCHEDULED',
+            players: [],
+            teams: [],
+            isDrawn: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          return freshMatch;
+        });
+      }, 1200);
+
+      return () => clearTimeout(fallbackTimer);
     }
 
     return () => {
@@ -106,6 +149,21 @@ export function useMatchSync(matchId: string, initialMatch?: Match | null) {
       if (typeof window !== 'undefined') {
         // Save to local storage
         localStorage.setItem(`footdraw_match_${matchId}`, JSON.stringify(withTimestamp));
+
+        // Save to club matches list
+        try {
+          const clubMatchesRaw = localStorage.getItem('footdraw_club_matches');
+          let clubMatches: Match[] = clubMatchesRaw ? JSON.parse(clubMatchesRaw) : [];
+          const idx = clubMatches.findIndex((m) => m.id === matchId);
+          if (idx >= 0) {
+            clubMatches[idx] = withTimestamp;
+          } else {
+            clubMatches.unshift(withTimestamp);
+          }
+          localStorage.setItem('footdraw_club_matches', JSON.stringify(clubMatches));
+        } catch {
+          // ignore
+        }
 
         // Save to recent matches list
         try {

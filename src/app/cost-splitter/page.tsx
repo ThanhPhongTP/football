@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
+import { useClubStore } from '@/lib/club-store';
 import {
   Receipt,
   CreditCard,
@@ -12,9 +13,13 @@ import {
   Users,
   Coins,
   ArrowRight,
+  Calendar,
 } from 'lucide-react';
 
 export default function CostSplitterPage() {
+  const { matches } = useClubStore();
+  const [selectedMatchId, setSelectedMatchId] = useState<string>('');
+
   const [pitchFee, setPitchFee] = useState<number>(700000);
   const [waterFee, setWaterFee] = useState<number>(140000);
   const [otherFee, setOtherFee] = useState<number>(0);
@@ -24,6 +29,23 @@ export default function CostSplitterPage() {
   const [bankAccount, setBankAccount] = useState('0987654321');
   const [accountHolder, setAccountHolder] = useState('NGUYEN VAN A');
   const [copied, setCopied] = useState(false);
+
+  const handleSelectMatch = (mId: string) => {
+    setSelectedMatchId(mId);
+    const m = matches.find((item) => item.id === mId);
+    if (m) {
+      const activeCount = m.players.filter((p) => p.status === 'IN').length || m.targetPlayers || 14;
+      setPlayerCount(activeCount);
+      if (m.cost) {
+        if (m.cost.pitchFee) setPitchFee(m.cost.pitchFee);
+        if (m.cost.waterFee) setWaterFee(m.cost.waterFee);
+        if (m.cost.otherFee) setOtherFee(m.cost.otherFee);
+        if (m.cost.bankName) setBankName(m.cost.bankName);
+        if (m.cost.bankAccount) setBankAccount(m.cost.bankAccount);
+        if (m.cost.accountHolder) setAccountHolder(m.cost.accountHolder);
+      }
+    }
+  };
 
   // Calculations
   const totalCost = pitchFee + waterFee + otherFee;
@@ -81,6 +103,27 @@ ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng 
               <Calculator className="w-5 h-5 text-emerald-400" />
               <h3 className="font-bold text-white text-base">Khoản thu chi trận đấu</h3>
             </div>
+
+            {/* Match auto-fill selector */}
+            {matches.length > 0 && (
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5 uppercase tracking-wide">
+                  Liên kết với trận đấu (Tự động điền quân số)
+                </label>
+                <select
+                  value={selectedMatchId}
+                  onChange={(e) => handleSelectMatch(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">-- Nhập thủ công (Không gắn trận) --</option>
+                  {matches.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title} ({m.date} - {m.players.filter((p) => p.status === 'IN').length || m.targetPlayers} người)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Pitch Fee */}
             <div>
