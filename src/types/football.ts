@@ -77,6 +77,7 @@ export interface AttendancePoll {
   date: string;
   time: string;
   venue: string;
+  venueMapUrl?: string;
   format: '5v5' | '7v7' | '11v11';
   targetPlayers: number;
   notes?: string;
@@ -109,6 +110,7 @@ export interface Match {
   date: string;
   time: string;
   venue: string;
+  venueMapUrl?: string;
   format: '5v5' | '7v7' | '11v11';
   targetPlayers: number;
   numberOfTeams: 2 | 3 | 4;
@@ -169,19 +171,28 @@ export const TEAM_PRESETS = [
 ];
 
 export const INITIAL_ROSTER: Player[] = [
-  { id: 'p_1', name: 'Hoàng Long', position: 'GK', rating: 9, matchesPlayed: 18, goals: 0, assists: 2, wins: 11, draws: 3, losses: 4, mvpCount: 2 },
-  { id: 'p_2', name: 'Đặng Văn Lâm', position: 'GK', rating: 9, matchesPlayed: 14, goals: 0, assists: 1, wins: 9, draws: 2, losses: 3, mvpCount: 1 },
-  { id: 'p_3', name: 'Minh Tuấn', position: 'DEF', rating: 8, matchesPlayed: 20, goals: 3, assists: 5, wins: 12, draws: 4, losses: 4, mvpCount: 1 },
-  { id: 'p_4', name: 'Quế Ngọc Hải', position: 'DEF', rating: 9, matchesPlayed: 22, goals: 5, assists: 7, wins: 14, draws: 3, losses: 5, mvpCount: 3 },
-  { id: 'p_5', name: 'Văn Đức', position: 'DEF', rating: 7, matchesPlayed: 16, goals: 2, assists: 4, wins: 9, draws: 3, losses: 4, mvpCount: 0 },
-  { id: 'p_6', name: 'Thành Chung', position: 'DEF', rating: 8, matchesPlayed: 19, goals: 4, assists: 2, wins: 11, draws: 4, losses: 4, mvpCount: 1 },
-  { id: 'p_7', name: 'Bùi Tiến Dũng', position: 'DEF', rating: 8, matchesPlayed: 17, goals: 2, assists: 3, wins: 10, draws: 3, losses: 4, mvpCount: 0 },
-  { id: 'p_8', name: 'Quang Hải', position: 'MID', rating: 10, matchesPlayed: 23, goals: 18, assists: 16, wins: 16, draws: 3, losses: 4, mvpCount: 6 },
-  { id: 'p_9', name: 'Hùng Dũng', position: 'MID', rating: 9, matchesPlayed: 21, goals: 9, assists: 14, wins: 13, draws: 4, losses: 4, mvpCount: 3 },
-  { id: 'p_10', name: 'Hoàng Đức', position: 'MID', rating: 10, matchesPlayed: 22, goals: 15, assists: 17, wins: 15, draws: 3, losses: 4, mvpCount: 5 },
-  { id: 'p_11', name: 'Tuấn Anh', position: 'MID', rating: 8, matchesPlayed: 15, goals: 4, assists: 8, wins: 8, draws: 3, losses: 4, mvpCount: 1 },
-  { id: 'p_12', name: 'Tiến Linh', position: 'FWD', rating: 9, matchesPlayed: 24, goals: 25, assists: 8, wins: 15, draws: 4, losses: 5, mvpCount: 5 },
-  { id: 'p_13', name: 'Tuấn Hải', position: 'FWD', rating: 9, matchesPlayed: 22, goals: 21, assists: 9, wins: 14, draws: 4, losses: 4, mvpCount: 4 },
-  { id: 'p_14', name: 'Công Phượng', position: 'FWD', rating: 8, matchesPlayed: 20, goals: 14, assists: 11, wins: 12, draws: 3, losses: 5, mvpCount: 2 },
-  { id: 'p_15', name: 'Văn Toàn', position: 'FWD', rating: 8, matchesPlayed: 19, goals: 12, assists: 10, wins: 11, draws: 3, losses: 5, mvpCount: 2 },
+  { id: 'p_1', name: 'Hoàng Duyn', position: 'GK', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_2', name: 'Lê Huy', position: 'GK', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_3', name: 'Song Toàn', position: 'DEF', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_4', name: 'Quân Cao', position: 'DEF', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_5', name: 'Đình Biển', position: 'DEF', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_6', name: 'Chí Trung', position: 'DEF', rating: 7, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_7', name: 'Hoàng Phương', position: 'DEF', rating: 7, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_8', name: 'Thanh Phong', position: 'MID', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_9', name: 'CP Cường', position: 'MID', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_10', name: 'Quang Vinh', position: 'MID', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_11', name: 'Hùng', position: 'MID', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_12', name: 'Minh Thi', position: 'MID', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_13', name: 'Khang Bắp', position: 'FWD', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_14', name: 'Khánh Duy', position: 'FWD', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_15', name: 'Hoàng Châu', position: 'FWD', rating: 8, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
+  { id: 'p_16', name: 'Thành', position: 'FWD', rating: 7, matchesPlayed: 0, goals: 0, assists: 0, wins: 0, draws: 0, losses: 0, mvpCount: 0 },
 ];
+
+export function getGoogleMapsUrl(venue: string, venueMapUrl?: string): string {
+  if (venueMapUrl && venueMapUrl.trim().startsWith('http')) {
+    return venueMapUrl.trim();
+  }
+  if (!venue || !venue.trim()) return 'https://www.google.com/maps';
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.trim())}`;
+}

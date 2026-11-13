@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       date: body.date || new Date().toISOString().split('T')[0],
       time: body.time || '20:00 - 21:30',
       venue: body.venue || 'Sân bóng',
+      venueMapUrl: body.venueMapUrl || undefined,
       format: body.format || '7v7',
       targetPlayers: Number(body.targetPlayers) || 14,
       notes: body.notes || '',

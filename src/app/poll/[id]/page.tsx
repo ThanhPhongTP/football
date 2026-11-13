@@ -4,13 +4,14 @@ import React, { useState, useEffect, useMemo, use, useCallback, Suspense } from 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { AttendancePoll, PollVote, Player, POSITION_LABELS } from '@/types/football';
+import { AttendancePoll, PollVote, Player, POSITION_LABELS, getGoogleMapsUrl } from '@/types/football';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import confetti from 'canvas-confetti';
 import {
   Calendar,
   Clock,
   MapPin,
+  ExternalLink,
   Users,
   CheckCircle2,
   XCircle,
@@ -333,10 +334,17 @@ ${window.location.href}`;
                   </div>
                 )}
                 {poll.venue && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-emerald-400" />
-                    <span>{poll.venue}</span>
-                  </div>
+                  <a
+                    href={getGoogleMapsUrl(poll.venue, poll.venueMapUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all font-semibold group cursor-pointer"
+                    title="Bấm để mở bản đồ Google Maps chỉ đường"
+                  >
+                    <MapPin className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <span className="underline decoration-emerald-500/50">{poll.venue}</span>
+                    <ExternalLink className="w-3 h-3 opacity-70 group-hover:opacity-100" />
+                  </a>
                 )}
               </div>
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { useAdminAuth } from '@/context/AdminAuthContext';
-import { AttendancePoll } from '@/types/football';
+import { AttendancePoll, getGoogleMapsUrl } from '@/types/football';
 import {
   Calendar,
   Clock,
@@ -34,6 +34,7 @@ export default function PollsPage() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00 - 21:30');
   const [venue, setVenue] = useState('Sân Chuyên Việt (Quận 7)');
+  const [venueMapUrl, setVenueMapUrl] = useState('');
   const [format, setFormat] = useState<'5v5' | '7v7' | '11v11'>('7v7');
   const [targetPlayers, setTargetPlayers] = useState(14);
   const [notes, setNotes] = useState('Anh em mang 2 áo Cam & Xanh, đến trước 15p khởi động!');
@@ -85,6 +86,7 @@ export default function PollsPage() {
           date,
           time: time.trim(),
           venue: venue.trim(),
+          venueMapUrl: venueMapUrl.trim() || undefined,
           format,
           targetPlayers,
           notes: notes.trim(),
@@ -129,11 +131,13 @@ export default function PollsPage() {
 
     const yesCount = poll.votes.filter((v) => v.status === 'YES').length;
     const pollUrl = `${window.location.origin}/poll/${poll.id}`;
+    const mapUrl = getGoogleMapsUrl(poll.venue, poll.venueMapUrl);
 
     const text = `⚽ ĐIỂM DANH ĐÁ BÓNG: ${poll.title}
 📅 Ngày: ${poll.date}
 ⏰ Giờ: ${poll.time}
 📍 Sân: ${poll.venue}
+🗺️ Chỉ đường: ${mapUrl}
 👥 Đã có: ${yesCount}/${poll.targetPlayers} người xác nhận
 ${poll.notes ? `💬 Ghi chú: ${poll.notes}\n` : ''}
 👉 Anh em bấm vào link để điểm danh:
@@ -246,8 +250,18 @@ ${pollUrl}`;
                         <span>{poll.time}</span>
                       </div>
                       <div className="flex items-center gap-1.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span className="truncate">{poll.venue}</span>
+                        <a
+                          href={getGoogleMapsUrl(poll.venue, poll.venueMapUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 truncate text-zinc-400 hover:text-emerald-400 hover:underline transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Bấm để mở chỉ đường Google Maps"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="truncate">{poll.venue}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                        </a>
                       </div>
                     </div>
 
@@ -431,6 +445,17 @@ ${pollUrl}`;
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-bold text-center"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-300 font-semibold mb-1">Link Google Maps (Tùy chọn):</label>
+                <input
+                  type="url"
+                  value={venueMapUrl}
+                  onChange={(e) => setVenueMapUrl(e.target.value)}
+                  placeholder="https://maps.app.goo.gl/... (nếu để trống sẽ tự tìm theo tên sân)"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                />
               </div>
 
               <div>

@@ -4,7 +4,7 @@ import React, { useState, useMemo, use, Suspense } from 'react';
 import { useMatchSync } from '@/lib/sync';
 import { balanceTeams, swapPlayersBetweenTeams } from '@/lib/balance';
 import { formatZaloTextMessage, downloadPitchAsPng } from '@/lib/export';
-import { Player, Team, POSITION_LABELS } from '@/types/football';
+import { Player, Team, POSITION_LABELS, getGoogleMapsUrl } from '@/types/football';
 import Navbar from '@/components/Navbar';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import QuickPasteModal from '@/components/QuickPasteModal';
@@ -20,6 +20,7 @@ import {
   Calendar,
   Clock,
   MapPin,
+  ExternalLink,
   Sparkles,
   RefreshCw,
   Download,
@@ -359,10 +360,17 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                   </div>
                 )}
                 {match.venue && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-emerald-400" />
-                    <span>{match.venue}</span>
-                  </div>
+                  <a
+                    href={getGoogleMapsUrl(match.venue, match.venueMapUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all font-semibold group cursor-pointer"
+                    title="Bấm để mở bản đồ Google Maps chỉ đường"
+                  >
+                    <MapPin className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <span className="underline decoration-emerald-500/50">{match.venue}</span>
+                    <ExternalLink className="w-3 h-3 opacity-70 group-hover:opacity-100" />
+                  </a>
                 )}
               </div>
 
@@ -797,6 +805,8 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                   teams={match.teams}
                   matchTitle={match.title}
                   matchInfo={`${match.date ? `${match.date} • ` : ''}${match.time || ''}${match.venue ? ` • ${match.venue}` : ''}`}
+                  selectedPlayerForSwap={isAdmin ? selectedPlayerForSwap : null}
+                  onSelectPlayerForSwap={isAdmin ? handleSelectPlayerForSwap : undefined}
                 />
               )}
 

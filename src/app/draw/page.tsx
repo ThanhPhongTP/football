@@ -63,6 +63,7 @@ function DrawContent() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00 - 21:30');
   const [venue, setVenue] = useState('Sân bóng Chuyên Việt (Quận 7)');
+  const [venueMapUrl, setVenueMapUrl] = useState('');
   const [format, setFormat] = useState<'5v5' | '7v7' | '11v11'>('7v7');
   const [numberOfTeams, setNumberOfTeams] = useState<2 | 3 | 4>(2);
   const [notes, setNotes] = useState('Áo Cam & Xanh dương');
@@ -103,6 +104,7 @@ function DrawContent() {
             if (poll.date) setDate(poll.date);
             if (poll.time) setTime(poll.time);
             if (poll.venue) setVenue(poll.venue);
+            if (poll.venueMapUrl) setVenueMapUrl(poll.venueMapUrl);
             if (poll.format) setFormat(poll.format);
             if (poll.notes) setNotes(poll.notes);
 
@@ -233,6 +235,7 @@ function DrawContent() {
       date,
       time,
       venue,
+      venueMapUrl: venueMapUrl || undefined,
       format,
       targetPlayers: players.length,
       numberOfTeams,
@@ -279,6 +282,7 @@ function DrawContent() {
         date,
         time: time.trim(),
         venue: venue.trim(),
+        venueMapUrl: venueMapUrl || undefined,
         format,
         targetPlayers: activePlayers.length,
         numberOfTeams,
@@ -617,6 +621,8 @@ function DrawContent() {
                       matchTitle={title}
                       matchInfo={`${date ? `${date} • ` : ''}${time || ''}${venue ? ` • ${venue}` : ''}`}
                       hideRating={!isAdmin}
+                      selectedPlayerForSwap={isAdmin ? selectedPlayerForSwap : null}
+                      onSelectPlayerForSwap={isAdmin ? handleSelectPlayerForSwap : undefined}
                     />
                   )}
 

@@ -1,4 +1,4 @@
-import { Match, POSITION_LABELS } from '@/types/football';
+import { Match, POSITION_LABELS, getGoogleMapsUrl } from '@/types/football';
 import { toPng } from 'html-to-image';
 
 /**
@@ -13,6 +13,8 @@ export function formatZaloTextMessage(match: Match): string {
   }
   if (match.venue) {
     lines.push(`📍 Địa điểm: ${match.venue}`);
+    const mapUrl = getGoogleMapsUrl(match.venue, match.venueMapUrl);
+    lines.push(`🗺️ Chỉ đường Google Maps: ${mapUrl}`);
   }
   lines.push('──────────────────────');
 

@@ -88,7 +88,7 @@ export default function PlayersPage() {
               <h1 className="text-2xl font-black text-white tracking-tight">Hồ sơ thành viên đội bóng</h1>
             </div>
             <p className="text-xs text-zinc-400 mt-1">
-              Quản lý danh sách cầu thủ cố định, điểm trình độ, bàn thắng, kiến tạo & tỷ lệ thắng
+              Quản lý danh sách thành viên đội bóng, điểm trình độ, bàn thắng, kiến tạo & tỷ lệ thắng
             </p>
           </div>
 

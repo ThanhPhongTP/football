@@ -48,88 +48,20 @@ export function useClubStore() {
       } catch {
         savedMatches = [];
       }
-    } else {
-      // Default sample matches for demo
-      savedMatches = [
-        {
-          id: 'match_sample_past',
-          title: 'Nội chiến Tuần 42 - Derby Anh Em',
-          date: '2026-10-22',
-          time: '20:00 - 21:30',
-          venue: 'Sân Chuyên Việt (Q7)',
-          format: '7v7',
-          targetPlayers: 14,
-          numberOfTeams: 2,
-          notes: 'Trận cầu đỉnh cao, mưa nhẹ',
-          status: 'COMPLETED',
-          isDrawn: true,
-          players: savedRoster.slice(0, 14).map((p) => ({ ...p, status: 'IN' as const })),
-          teams: [
-            {
-              id: 1,
-              name: 'Đội Cam (Orange)',
-              colorName: 'Cam',
-              bgGradient: 'from-orange-500/20 via-orange-950/40 to-zinc-900',
-              badgeBg: 'bg-orange-500 text-white',
-              textColor: 'text-orange-400',
-              players: savedRoster.slice(0, 7),
-              totalRating: 58,
-              avgRating: 8.3,
-              gkCount: 1,
-              defCount: 3,
-              midCount: 2,
-              fwdCount: 1,
-              score: 4,
-            },
-            {
-              id: 2,
-              name: 'Đội Xanh (Blue)',
-              colorName: 'Xanh dương',
-              bgGradient: 'from-blue-500/20 via-blue-950/40 to-zinc-900',
-              badgeBg: 'bg-blue-600 text-white',
-              textColor: 'text-blue-400',
-              players: savedRoster.slice(7, 14),
-              totalRating: 57,
-              avgRating: 8.1,
-              gkCount: 1,
-              defCount: 2,
-              midCount: 2,
-              fwdCount: 2,
-              score: 3,
-            },
-          ],
-          score: { team1: 4, team2: 3 },
-          mvpPlayerId: 'p_8', // Quang Hải
-          goalEvents: [
-            { id: 'g1', playerId: 'p_12', playerName: 'Tiến Linh', teamId: 1, minute: 12 },
-            { id: 'g2', playerId: 'p_8', playerName: 'Quang Hải', teamId: 1, minute: 25 },
-            { id: 'g3', playerId: 'p_8', playerName: 'Quang Hải', teamId: 1, minute: 50 },
-            { id: 'g4', playerId: 'p_12', playerName: 'Tiến Linh', teamId: 1, minute: 75 },
-            { id: 'g5', playerId: 'p_13', playerName: 'Tuấn Hải', teamId: 2, minute: 18 },
-            { id: 'g6', playerId: 'p_10', playerName: 'Hoàng Đức', teamId: 2, minute: 40 },
-            { id: 'g7', playerId: 'p_13', playerName: 'Tuấn Hải', teamId: 2, minute: 68 },
-          ],
-          assistEvents: [
-            { id: 'a1', playerId: 'p_9', playerName: 'Hùng Dũng', teamId: 1 },
-            { id: 'a2', playerId: 'p_10', playerName: 'Hoàng Đức', teamId: 2 },
-          ],
-          cost: {
-            pitchFee: 700000,
-            waterFee: 140000,
-            otherFee: 0,
-            total: 840000,
-            costPerPlayer: 60000,
-            bankName: 'MB Bank',
-            bankAccount: '0987654321',
-            accountHolder: 'NGUYEN VAN LONG',
-          },
-          createdAt: Date.now() - 86400000 * 7,
-          updatedAt: Date.now() - 86400000 * 7,
-        },
-      ];
-      localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(savedMatches));
     }
     setMatches(savedMatches);
+
+    // Sync matches from Cloud API / Firestore
+    fetch('/api/matches')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cloudMatches) => {
+        if (Array.isArray(cloudMatches)) {
+          setMatches(cloudMatches);
+          localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(cloudMatches));
+        }
+      })
+      .catch(() => {});
+
     setIsLoaded(true);
   }, []);
 

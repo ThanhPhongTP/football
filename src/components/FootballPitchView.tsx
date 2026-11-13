@@ -10,11 +10,20 @@ interface FootballPitchViewProps {
   matchTitle: string;
   matchInfo: string;
   hideRating?: boolean;
+  selectedPlayerForSwap?: import('@/types/football').Player | null;
+  onSelectPlayerForSwap?: (player: import('@/types/football').Player) => void;
 }
 
-  export default function FootballPitchView({ teams, matchTitle, matchInfo, hideRating }: FootballPitchViewProps) {
-    const { isAdmin } = useAdminAuth();
-    const showRating = isAdmin && !hideRating;
+export default function FootballPitchView({
+  teams,
+  matchTitle,
+  matchInfo,
+  hideRating,
+  selectedPlayerForSwap,
+  onSelectPlayerForSwap,
+}: FootballPitchViewProps) {
+  const { isAdmin, openPasswordModal } = useAdminAuth();
+  const showRating = isAdmin && !hideRating;
     if (teams.length === 0 || teams.every((t) => t.players.length === 0)) {
       return (
         <div className="p-8 text-center text-zinc-500 rounded-2xl border border-zinc-800 bg-zinc-950">
@@ -25,6 +34,25 @@ interface FootballPitchViewProps {
 
     return (
       <div className="space-y-4">
+        {/* Swap Alert Notice */}
+        {selectedPlayerForSwap && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs flex items-center justify-between shadow-xl animate-pulse">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔄</span>
+              <span>
+                Đang chọn: <strong className="text-white underline">{selectedPlayerForSwap.name}</strong>. Hãy bấm vào một cầu thủ khác trên sa bàn để đổi chỗ!
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onSelectPlayerForSwap?.(selectedPlayerForSwap)}
+              className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Hủy
+            </button>
+          </div>
+        )}
+
         {/* Container to be exported as image */}
         <div
           id="pitch-export-container"
@@ -136,29 +164,64 @@ interface FootballPitchViewProps {
                                 ? 'bg-rose-600 text-white border-rose-300'
                                 : 'bg-emerald-500 text-black border-white';
 
+                          const isSelected = selectedPlayerForSwap?.id === player.id;
+                          const isSwapTarget = !!selectedPlayerForSwap && !isSelected;
+
                           return (
                             <div
                               key={player.id}
-                              className="flex flex-col items-center group cursor-pointer"
+                              onClick={() => {
+                                if (!isAdmin) {
+                                  openPasswordModal();
+                                  return;
+                                }
+                                onSelectPlayerForSwap?.(player);
+                              }}
+                              title={
+                                !isAdmin
+                                  ? 'Chỉ Admin mới có quyền sắp xếp cầu thủ'
+                                  : isSelected
+                                  ? 'Bấm để hủy chọn'
+                                  : selectedPlayerForSwap
+                                  ? `Bấm để đổi chỗ với ${selectedPlayerForSwap.name}`
+                                  : `Bấm để chọn sắp xếp ${player.name}`
+                              }
+                              className={`flex flex-col items-center group cursor-pointer transition-all duration-200 relative ${
+                                isSelected ? 'scale-125 z-30' : isSwapTarget ? 'hover:scale-115 z-10' : 'hover:scale-105'
+                              }`}
                             >
                               {/* Shirt icon / Badge */}
                               <div
-                                className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full ${shirtColor} border-2 shadow-lg flex items-center justify-center font-bold text-[10px] sm:text-xs transition-transform transform group-hover:scale-110`}
+                                className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full ${shirtColor} border-2 shadow-lg flex items-center justify-center font-bold text-[10px] sm:text-xs transition-all ${
+                                  isSelected
+                                    ? 'ring-4 ring-amber-400 border-white shadow-amber-400/50 shadow-xl animate-pulse'
+                                    : isSwapTarget
+                                    ? 'group-hover:ring-2 group-hover:ring-teal-400'
+                                    : ''
+                                }`}
                               >
                                 <span>{posInfo.short}</span>
                               </div>
 
                               {/* Name & Rating Label */}
-                              <div className="mt-1 px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-sm border border-white/20 text-center max-w-[70px] sm:max-w-[85px]">
-                                <p className="text-[9px] sm:text-[10px] font-bold text-white truncate leading-tight">
+                              <div
+                                className={`mt-1 px-1.5 py-0.5 rounded-md backdrop-blur-sm border text-center max-w-[70px] sm:max-w-[85px] transition-all ${
+                                  isSelected
+                                    ? 'bg-amber-500 text-zinc-950 border-amber-300 font-black shadow-lg'
+                                    : 'bg-black/75 border-white/20 text-white'
+                                }`}
+                              >
+                                <p className="text-[9px] sm:text-[10px] font-bold truncate leading-tight">
                                   {player.name}
                                 </p>
-                                {showRating && (
+                                {isSelected ? (
+                                  <span className="text-[8px] font-extrabold uppercase tracking-tighter">Đang chọn</span>
+                                ) : showRating ? (
                                   <div className="flex items-center justify-center gap-0.5 text-[8px] text-amber-300">
                                     <span>★</span>
                                     <span>{player.rating}</span>
                                   </div>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                           );
@@ -197,17 +260,30 @@ interface FootballPitchViewProps {
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {team.players.map((p) => {
                       const pos = POSITION_LABELS[p.position];
+                      const isSelected = selectedPlayerForSwap?.id === p.id;
                       return (
-                        <span
+                        <button
                           key={p.id}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs"
+                          type="button"
+                          onClick={() => {
+                            if (!isAdmin) {
+                              openPasswordModal();
+                              return;
+                            }
+                            onSelectPlayerForSwap?.(p);
+                          }}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-xs transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500 text-zinc-950 border-amber-300 font-bold shadow-md scale-105'
+                              : 'bg-zinc-950 border-zinc-800 text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900'
+                          }`}
                         >
                           <span className={`text-[10px] font-bold px-1 rounded ${pos.badgeClass}`}>
                             {p.position}
                           </span>
-                          <span className="text-zinc-200 font-medium">{p.name}</span>
+                          <span className="font-medium">{p.name}</span>
                           {showRating && <span className="text-[10px] text-amber-400">★{p.rating}</span>}
-                        </span>
+                        </button>
                       );
                     })}
                   </div>

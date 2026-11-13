@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { Match, Player } from '@/types/football';
-import { parseQuickPlayerList, balanceTeams } from '@/lib/balance';
 import {
   Trophy,
   Users,
@@ -33,24 +32,11 @@ export default function HomePage() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00 - 21:30');
   const [venue, setVenue] = useState('Sân bóng Chuyên Việt (Quận 7)');
+  const [venueMapUrl, setVenueMapUrl] = useState('');
   const [format, setFormat] = useState<'5v5' | '7v7' | '11v11'>('7v7');
   const [targetPlayers, setTargetPlayers] = useState(14);
   const [numberOfTeams, setNumberOfTeams] = useState<2 | 3 | 4>(2);
   const [notes, setNotes] = useState('Anh em mang 2 áo (Áo Cam & Áo Xanh dương)');
-  const [initialPlayersText, setInitialPlayersText] = useState(`1. Hoàng Long (GK) - 8đ
-2. Minh Tuấn - DEF - 7đ
-3. Văn Đức - DEF - 7đ
-4. Quang Hải - MID - 9đ
-5. Hùng Dũng - MID - 8đ
-6. Tiến Linh - FWD - 8đ
-7. Tuấn Hải - FWD - 8đ
-8. Văn Lâm - GK - 9đ
-9. Quế Ngọc Hải - DEF - 8đ
-10. Thành Chung - DEF - 7đ
-11. Hoàng Đức - MID - 9đ
-12. Công Phượng - FWD - 8đ
-13. Văn Toàn - FWD - 7đ
-14. Bùi Tiến Dũng - DEF - 8đ`);
 
   const [recentMatches, setRecentMatches] = useState<
     { id: string; title: string; date: string; time: string; updatedAt: number }[]
@@ -93,34 +79,21 @@ export default function HomePage() {
     // Generate unique short slug ID
     const matchId = `match_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
 
-    // Parse initial players if provided
-    let players: Player[] = [];
-    if (initialPlayersText.trim()) {
-      const parsed = parseQuickPlayerList(initialPlayersText);
-      players = parsed.map((p, idx) => ({
-        ...p,
-        id: `p_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 5)}`,
-      }));
-    }
-
-    // Auto-draw teams if we already have players
-    const activeOnes = players.filter((p) => p.status === 'IN');
-    const initialTeams = activeOnes.length >= 2 ? balanceTeams(activeOnes, numberOfTeams) : [];
-
     const newMatch: Match = {
       id: matchId,
       title: title.trim(),
       date,
       time: time.trim(),
       venue: venue.trim(),
+      venueMapUrl: venueMapUrl.trim() || undefined,
       format,
       targetPlayers,
       numberOfTeams,
       notes: notes.trim(),
       status: 'SCHEDULED',
-      players,
-      teams: initialTeams,
-      isDrawn: initialTeams.length > 0,
+      players: [],
+      teams: [],
+      isDrawn: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -321,17 +294,31 @@ export default function HomePage() {
                               </div>
 
                               {/* Venue */}
-                              <div>
-                                <label className="block text-xs font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-                                  Địa điểm / Sân bóng
-                                </label>
-                                <input
-                                  type="text"
-                                  value={venue}
-                                  onChange={(e) => setVenue(e.target.value)}
-                                  placeholder="VD: Sân bóng Chuyên Việt, Quận 7"
-                                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                                />
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
+                                    Địa điểm / Sân bóng
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={venue}
+                                    onChange={(e) => setVenue(e.target.value)}
+                                    placeholder="VD: Sân bóng Chuyên Việt, Quận 7"
+                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
+                                    Link Google Maps (Tùy chọn)
+                                  </label>
+                                  <input
+                                    type="url"
+                                    value={venueMapUrl}
+                                    onChange={(e) => setVenueMapUrl(e.target.value)}
+                                    placeholder="https://maps.app.goo.gl/... hoặc để trống"
+                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                  />
+                                </div>
                               </div>
 
                             {/* Match Format & Target Players */}
@@ -393,23 +380,6 @@ export default function HomePage() {
                                     </button>
                                   ))}
                                 </div>
-                            </div>
-
-                            {/* Initial Roster Paste (Optional) */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <label className="text-xs font-bold text-zinc-200 uppercase tracking-wide">
-                                  Dán danh sách anh em cố định (Tùy chọn)
-                                </label>
-                                <span className="text-[11px] text-zinc-400">Có thể dán từ Zalo</span>
-                              </div>
-                              <textarea
-                                value={initialPlayersText}
-                                onChange={(e) => setInitialPlayersText(e.target.value)}
-                                rows={5}
-                                placeholder="1. Nguyễn Văn A (GK)&#10;2. Trần Văn B - DEF&#10;3. Lê Văn C - MID..."
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 font-mono text-xs text-zinc-300 focus:outline-none focus:border-emerald-500"
-                              />
                             </div>
 
                             {/* Notes */}
