@@ -63,37 +63,7 @@ async function initDefaultData() {
   }
 
   const existingPolls = await readFileSafe<AttendancePoll[]>(POLLS_FILE, []);
-  if (existingPolls.length === 0) {
-    const defaultPoll: AttendancePoll = {
-      id: 'poll-derby-thu-5',
-      title: 'Trận Bóng Tuần 46 - FC Anh Em',
-      date: '2026-11-19',
-      time: '20:00 - 21:30',
-      venue: 'Sân Chuyên Việt (Quận 7)',
-      format: '7v7',
-      targetPlayers: 14,
-      notes: 'Anh em mang 2 áo (Cam & Xanh). Đến trước 15p khởi động nhé!',
-      status: 'OPEN',
-      votes: [
-        { id: 'v_1', playerName: 'Quang Hải', playerId: 'p_8', status: 'YES', position: 'MID', rating: 10, updatedAt: Date.now() - 3600000 },
-        { id: 'v_2', playerName: 'Hoàng Đức', playerId: 'p_10', status: 'YES', position: 'MID', rating: 10, updatedAt: Date.now() - 3000000 },
-        { id: 'v_3', playerName: 'Tiến Linh', playerId: 'p_12', status: 'YES', position: 'FWD', rating: 9, updatedAt: Date.now() - 2500000 },
-        { id: 'v_4', playerName: 'Tuấn Hải', playerId: 'p_13', status: 'YES', position: 'FWD', rating: 9, updatedAt: Date.now() - 2000000 },
-        { id: 'v_5', playerName: 'Hùng Dũng', playerId: 'p_9', status: 'YES', position: 'MID', rating: 9, updatedAt: Date.now() - 1800000 },
-        { id: 'v_6', playerName: 'Quế Ngọc Hải', playerId: 'p_4', status: 'YES', position: 'DEF', rating: 9, updatedAt: Date.now() - 1500000 },
-        { id: 'v_7', playerName: 'Bùi Tiến Dũng', playerId: 'p_7', status: 'YES', position: 'DEF', rating: 8, updatedAt: Date.now() - 1200000 },
-        { id: 'v_8', playerName: 'Đặng Văn Lâm', playerId: 'p_2', status: 'YES', position: 'GK', rating: 9, updatedAt: Date.now() - 1000000 },
-        { id: 'v_9', playerName: 'Thành Chung', playerId: 'p_6', status: 'YES', position: 'DEF', rating: 8, updatedAt: Date.now() - 800000 },
-        { id: 'v_10', playerName: 'Công Phượng', playerId: 'p_14', status: 'NO', position: 'FWD', rating: 8, updatedAt: Date.now() - 600000 },
-      ],
-      createdAt: Date.now() - 86400000,
-      updatedAt: Date.now(),
-    };
-    await writeFileSafe(POLLS_FILE, [defaultPoll]);
-    memoryPolls = [defaultPoll];
-  } else {
-    memoryPolls = existingPolls;
-  }
+  memoryPolls = existingPolls;
 }
 
 // --- POLLS API ---
@@ -106,14 +76,7 @@ export async function getPolls(): Promise<AttendancePoll[]> {
         const list = snap.docs.map((d) => d.data() as AttendancePoll);
         return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
       }
-      // If Firestore is empty, seed default poll
-      await initDefaultData();
-      if (memoryPolls.length > 0) {
-        for (const p of memoryPolls) {
-          await setDoc(doc(db, 'polls', p.id), p);
-        }
-        return memoryPolls;
-      }
+      return [];
     } catch (err) {
       console.warn('Firestore getPolls error, falling back to local:', err);
     }
@@ -197,11 +160,23 @@ export async function deletePoll(id: string): Promise<boolean> {
 
   const polls = await readFileSafe<AttendancePoll[]>(POLLS_FILE, memoryPolls);
   const filtered = polls.filter((p) => p.id !== id);
-  if (filtered.length !== polls.length) {
-    memoryPolls = filtered;
-    await writeFileSafe(POLLS_FILE, filtered);
-    return true;
+  memoryPolls = filtered;
+  await writeFileSafe(POLLS_FILE, filtered);
+
+  // Unlink from any match that references this pollId
+  try {
+    const matches = await getMatches();
+    const linked = matches.find((m) => m.pollId === id);
+    if (linked) {
+      await saveMatch({
+        ...linked,
+        pollId: undefined,
+      });
+    }
+  } catch (err) {
+    console.warn('Unlink deleted poll from match error:', err);
   }
+
   return true;
 }
 

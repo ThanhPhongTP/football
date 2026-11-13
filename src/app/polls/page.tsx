@@ -422,11 +422,22 @@ ${pollUrl}`;
                         <ExternalLink className="w-4 h-4" />
                       </Link>
 
-                      {isAdmin && (
+                      {isAdmin ? (
                         <button
                           onClick={(e) => handleDeletePoll(poll.id, e)}
                           title="Xóa đợt điểm danh"
-                          className="p-1.5 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-colors"
+                          className="p-1.5 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPasswordModal();
+                          }}
+                          title="Chuyển sang Admin để xóa đợt điểm danh"
+                          className="p-1.5 rounded-xl text-zinc-600 hover:text-rose-400/70 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
