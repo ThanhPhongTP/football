@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Player, Match, INITIAL_ROSTER, GoalEvent, AssistEvent, MatchCost } from '@/types/football';
 import { initFirebase } from './firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection } from 'firebase/firestore';
 
 const ROSTER_STORAGE_KEY = 'footdraw_club_roster';
 const MATCHES_STORAGE_KEY = 'footdraw_club_matches';
@@ -13,7 +13,7 @@ export function useClubStore() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Initialize from LocalStorage or default presets
+  // Initialize from LocalStorage and setup Realtime Listeners (BroadcastChannel + Firestore)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -31,17 +31,6 @@ export function useClubStore() {
     }
     setRoster(savedRoster);
 
-    // Sync latest roster from Cloud API / Firestore
-    fetch('/api/players')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((cloudPlayers) => {
-        if (Array.isArray(cloudPlayers) && cloudPlayers.length > 0) {
-          setRoster(cloudPlayers);
-          localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(cloudPlayers));
-        }
-      })
-      .catch(() => {});
-
     let savedMatches: Match[] = [];
     const rawMatches = localStorage.getItem(MATCHES_STORAGE_KEY);
     if (rawMatches) {
@@ -53,7 +42,17 @@ export function useClubStore() {
     }
     setMatches(savedMatches);
 
-    // Sync matches from Cloud API / Firestore
+    // Initial fetch from Server API
+    fetch('/api/players')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cloudPlayers) => {
+        if (Array.isArray(cloudPlayers) && cloudPlayers.length > 0) {
+          setRoster(cloudPlayers);
+          localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(cloudPlayers));
+        }
+      })
+      .catch(() => {});
+
     fetch('/api/matches')
       .then((res) => (res.ok ? res.json() : null))
       .then((cloudMatches) => {
@@ -64,10 +63,107 @@ export function useClubStore() {
       })
       .catch(() => {});
 
+    // 1. Cross-tab Realtime Sync via BroadcastChannel
+    let rosterChannel: BroadcastChannel | null = null;
+    let matchesChannel: BroadcastChannel | null = null;
+    try {
+      rosterChannel = new BroadcastChannel('footdraw_roster_channel');
+      rosterChannel.onmessage = (event) => {
+        if (Array.isArray(event.data) && event.data.length > 0) {
+          setRoster(event.data);
+          localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(event.data));
+        }
+      };
+
+      matchesChannel = new BroadcastChannel('footdraw_matches_channel');
+      matchesChannel.onmessage = (event) => {
+        if (Array.isArray(event.data)) {
+          setMatches(event.data);
+          localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(event.data));
+        }
+      };
+    } catch {
+      // BroadcastChannel not available
+    }
+
+    // 2. Cloud Firestore Realtime Listeners (Multi-device Realtime)
+    const { db } = initFirebase();
+    let unsubRoster: (() => void) | null = null;
+    let unsubMatches: (() => void) | null = null;
+
+    if (db) {
+      try {
+        unsubRoster = onSnapshot(collection(db, 'roster'), (snap) => {
+          if (!snap.empty) {
+            const list = snap.docs.map((d) => d.data() as Player);
+            if (list.length > 0) {
+              setRoster(list);
+              localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(list));
+            }
+          }
+        });
+
+        unsubMatches = onSnapshot(collection(db, 'matches'), (snap) => {
+          if (!snap.empty) {
+            const list = snap.docs.map((d) => d.data() as Match);
+            setMatches(list);
+            localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(list));
+          }
+        });
+      } catch (err) {
+        console.warn('Firestore onSnapshot error in club-store:', err);
+      }
+    }
+
+    // 3. Periodic Background Sync (every 3s)
+    const pollInterval = setInterval(() => {
+      fetch('/api/players')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((cloudPlayers) => {
+          if (Array.isArray(cloudPlayers) && cloudPlayers.length > 0) {
+            setRoster((prev) => {
+              const prevStr = JSON.stringify(prev);
+              const nextStr = JSON.stringify(cloudPlayers);
+              if (prevStr !== nextStr) {
+                localStorage.setItem(ROSTER_STORAGE_KEY, nextStr);
+                return cloudPlayers;
+              }
+              return prev;
+            });
+          }
+        })
+        .catch(() => {});
+
+      fetch('/api/matches')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((cloudMatches) => {
+          if (Array.isArray(cloudMatches)) {
+            setMatches((prev) => {
+              const prevStr = JSON.stringify(prev);
+              const nextStr = JSON.stringify(cloudMatches);
+              if (prevStr !== nextStr) {
+                localStorage.setItem(MATCHES_STORAGE_KEY, nextStr);
+                return cloudMatches;
+              }
+              return prev;
+            });
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+
     setIsLoaded(true);
+
+    return () => {
+      clearInterval(pollInterval);
+      if (unsubRoster) unsubRoster();
+      if (unsubMatches) unsubMatches();
+      if (rosterChannel) rosterChannel.close();
+      if (matchesChannel) matchesChannel.close();
+    };
   }, []);
 
-  // Save Roster (Local storage + Sync Cloud Firestore)
+  // Save Roster (Local storage + Sync Cloud Firestore + Realtime Broadcast)
   const saveRoster = useCallback((newRoster: Player[]) => {
     setRoster(newRoster);
     if (typeof window !== 'undefined') {
@@ -78,6 +174,22 @@ export function useClubStore() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRoster),
       }).catch((err) => console.warn('Could not sync roster to cloud:', err));
+
+      // Push to client Firebase Firestore directly
+      const { db } = initFirebase();
+      if (db) {
+        for (const p of newRoster) {
+          const cleanP = JSON.parse(JSON.stringify(p));
+          setDoc(doc(db, 'roster', p.id), cleanP, { merge: true }).catch(() => {});
+        }
+      }
+
+      // Realtime cross-tab broadcast
+      try {
+        const bc = new BroadcastChannel('footdraw_roster_channel');
+        bc.postMessage(newRoster);
+        bc.close();
+      } catch {}
     }
   }, []);
 
@@ -86,6 +198,11 @@ export function useClubStore() {
     setMatches(newMatches);
     if (typeof window !== 'undefined') {
       localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(newMatches));
+      try {
+        const bc = new BroadcastChannel('footdraw_matches_channel');
+        bc.postMessage(newMatches);
+        bc.close();
+      } catch {}
     }
   }, []);
 
@@ -178,11 +295,24 @@ export function useClubStore() {
 
       // Update Roster Player Stats
       const updatedRoster = roster.map((player) => {
-        // Was this player in team 1 or team 2?
-        const inTeam1 = (targetMatch.teams[0]?.players || []).some((p) => p.id === player.id);
-        const inTeam2 = (targetMatch.teams[1]?.players || []).some((p) => p.id === player.id);
+        // Check if player participated in team 1 or team 2
+        const inTeam1 =
+          (targetMatch.teams[0]?.players || []).some((p) => p.id === player.id) ||
+          result.goalEvents.some((g) => g.playerId === player.id && g.teamId === 1) ||
+          result.assistEvents.some((a) => a.playerId === player.id && a.teamId === 1);
 
-        if (!inTeam1 && !inTeam2) return player;
+        const inTeam2 =
+          (targetMatch.teams[1]?.players || []).some((p) => p.id === player.id) ||
+          result.goalEvents.some((g) => g.playerId === player.id && g.teamId === 2) ||
+          result.assistEvents.some((a) => a.playerId === player.id && a.teamId === 2);
+
+        const inMatchGeneral =
+          inTeam1 ||
+          inTeam2 ||
+          (targetMatch.players || []).some((p) => p.id === player.id && p.status === 'IN') ||
+          result.goalEvents.some((g) => g.playerId === player.id) ||
+          result.assistEvents.some((a) => a.playerId === player.id) ||
+          result.mvpPlayerId === player.id;
 
         // If previously completed, subtract previous stats for this match first
         const prevGoals = wasCompleted ? (targetMatch.goalEvents || []).filter((g) => g.playerId === player.id).length : 0;
@@ -199,6 +329,11 @@ export function useClubStore() {
         const playerGoals = result.goalEvents.filter((g) => g.playerId === player.id).length;
         const playerAssists = result.assistEvents.filter((a) => a.playerId === player.id).length;
         const isMvp = result.mvpPlayerId === player.id;
+
+        // If the player had no involvement previously or currently, keep unchanged
+        if (!inMatchGeneral && prevGoals === 0 && prevAssists === 0 && prevMvp === 0) {
+          return player;
+        }
 
         const won = (inTeam1 && team1Won) || (inTeam2 && team2Won);
         const lost = (inTeam1 && team2Won) || (inTeam2 && team1Won);
