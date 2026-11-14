@@ -27,7 +27,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: '/matches', label: 'Trận đấu', icon: Calendar },
+    { href: '/', label: 'Trận đấu', icon: Calendar },
     { href: '/players', label: 'Cầu thủ', icon: Users },
     { href: '/cost-splitter', label: 'Chia tiền sân', icon: Receipt },
     { href: '/stats', label: 'Thống kê', icon: BarChart3 },
