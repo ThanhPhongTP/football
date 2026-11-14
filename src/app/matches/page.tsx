@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useClubStore } from '@/lib/club-store';
 import { useAdminAuth } from '@/context/AdminAuthContext';
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function MatchesPage() {
+  const router = useRouter();
   const { isAdmin, openPasswordModal } = useAdminAuth();
   const { matches, roster, recordMatchResult } = useClubStore();
   const [filter, setFilter] = useState<'ALL' | 'UPCOMING' | 'COMPLETED'>('ALL');
@@ -205,7 +207,8 @@ export default function MatchesPage() {
               return (
                 <div
                   key={m.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl hover:border-zinc-700 transition-all space-y-4"
+                  onClick={() => router.push(`/match/${m.id}`)}
+                  className="bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 rounded-3xl p-5 sm:p-6 shadow-xl transition-all space-y-4 cursor-pointer group hover:bg-zinc-900/80"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
                     <div className="space-y-1">
@@ -222,21 +225,29 @@ export default function MatchesPage() {
                           {m.format} • {m.players.length} cầu thủ
                         </span>
                       </div>
-                      <h3 className="font-extrabold text-base sm:text-lg text-white">{m.title}</h3>
+                      <h3 className="font-extrabold text-base sm:text-lg text-white group-hover:text-emerald-400 transition-colors">
+                        {m.title}
+                      </h3>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {isAdmin ? (
                         <button
-                          onClick={() => handleOpenRecordModal(m)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenRecordModal(m);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors cursor-pointer"
                         >
                           <Edit3 className="w-3.5 h-3.5 text-amber-400" />
                           <span>{isCompleted ? 'Sửa tỷ số' : 'Nhập tỷ số'}</span>
                         </button>
                       ) : (
                         <button
-                          onClick={openPasswordModal}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPasswordModal();
+                          }}
                           title="Nhập mật khẩu để mở quyền nhập tỷ số"
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium border border-zinc-800 transition-colors cursor-pointer"
                         >
@@ -245,13 +256,9 @@ export default function MatchesPage() {
                         </button>
                       )}
 
-                      <Link
-                        href={`/match/${m.id}`}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
-                      >
-                        <span>Vào trận (Điểm danh & Sa bàn)</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
+                      <div className="w-8 h-8 rounded-xl bg-zinc-800 group-hover:bg-emerald-500 group-hover:text-zinc-950 text-zinc-400 flex items-center justify-center transition-all ml-1">
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
                   </div>
 
