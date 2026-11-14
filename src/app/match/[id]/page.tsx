@@ -12,6 +12,7 @@ import AddPlayerModal from '@/components/AddPlayerModal';
 import QuickPasteModal from '@/components/QuickPasteModal';
 import FootballPitchView from '@/components/FootballPitchView';
 import TeamCard from '@/components/TeamCard';
+import AvatarModal from '@/components/AvatarModal';
 import confetti from 'canvas-confetti';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import {
@@ -39,6 +40,7 @@ import {
   Shield,
   Layers,
   UserCheck,
+  Camera,
 } from 'lucide-react';
 
 export default function MatchRoomPage({ params }: { params: Promise<{ id: string }> }) {
@@ -78,6 +80,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   // Quick self-voting state
   const [voterName, setVoterName] = useState('');
   const [showChangeName, setShowChangeName] = useState(false);
+  const [avatarModalPlayer, setAvatarModalPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -116,6 +119,37 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
       ...match,
       players: updatedPlayers,
     });
+  };
+
+  const handleSaveAvatar = (playerId: string, avatarUrl: string | undefined) => {
+    if (!match) return;
+    const updatedPlayers = (match.players || []).map((p) =>
+      p.id === playerId ? { ...p, avatar: avatarUrl } : p
+    );
+    const updatedTeams = (match.teams || []).map((t) => ({
+      ...t,
+      players: t.players.map((p) => (p.id === playerId ? { ...p, avatar: avatarUrl } : p)),
+    }));
+    saveMatch({
+      ...match,
+      players: updatedPlayers,
+      teams: updatedTeams,
+    });
+
+    // Also sync to global roster
+    fetch('/api/players')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((roster: Player[]) => {
+        if (Array.isArray(roster)) {
+          const newRoster = roster.map((p) => (p.id === playerId ? { ...p, avatar: avatarUrl } : p));
+          fetch('/api/players', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newRoster),
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
   };
 
   // Auto-seed initial 16 club players if match players list is empty
@@ -498,38 +532,67 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               {voterName && !showChangeName ? (
                 <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-zinc-400">Xin chào,</span>
-                        <strong className="text-sm text-white font-bold">{voterName}</strong>
-                        {voterPlayer && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold">
-                            {voterPlayer.position}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-xs">
-                        <span className="text-zinc-400">Trạng thái:</span>
-                        {isVoterIn ? (
-                          <span className="font-bold text-emerald-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 fill-emerald-500/20" />
-                            ĐÃ BÁO CÓ MẶT (ĐI ĐÁ)
-                          </span>
+                    <div className="flex items-center gap-3">
+                      {/* Member Avatar */}
+                      <div
+                        onClick={() => voterPlayer && setAvatarModalPlayer(voterPlayer)}
+                        title="Bấm để đổi ảnh đại diện của bạn"
+                        className="relative w-12 h-12 rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-700 flex items-center justify-center font-bold text-xs text-emerald-400 cursor-pointer group shrink-0 shadow-inner"
+                      >
+                        {voterPlayer?.avatar ? (
+                          <img src={voterPlayer.avatar} alt={voterName} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="font-semibold text-rose-400 flex items-center gap-1">
-                            <XCircle className="w-3.5 h-3.5" />
-                            ĐÃ BÁO BẬN (KHÔNG ĐI)
-                          </span>
+                          <span>{voterPlayer?.position || 'FC'}</span>
                         )}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <Camera className="w-4 h-4 text-emerald-300" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-400">Xin chào,</span>
+                          <strong className="text-sm text-white font-bold">{voterName}</strong>
+                          {voterPlayer && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold">
+                              {voterPlayer.position}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 flex items-center gap-1.5 text-xs">
+                          <span className="text-zinc-400">Trạng thái:</span>
+                          {isVoterIn ? (
+                            <span className="font-bold text-emerald-400 flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 fill-emerald-500/20" />
+                              ĐÃ BÁO CÓ MẶT (ĐI ĐÁ)
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-rose-400 flex items-center gap-1">
+                              <XCircle className="w-3.5 h-3.5" />
+                              ĐÃ BÁO BẬN (KHÔNG ĐI)
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowChangeName(true)}
-                      className="text-xs text-zinc-400 hover:text-white underline cursor-pointer"
-                    >
-                      Đổi tên
-                    </button>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => voterPlayer && setAvatarModalPlayer(voterPlayer)}
+                        className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                      >
+                        <Camera className="w-3 h-3" />
+                        <span>Đổi ảnh</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowChangeName(true)}
+                        className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
+                      >
+                        Đổi tên
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 pt-1">
@@ -578,7 +641,7 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                             setVoterName(p.name);
                             setShowChangeName(false);
                           }}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                          className={`px-2 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                             isSelected
                               ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/50'
                               : isIn
@@ -586,7 +649,15 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                               : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
                           }`}
                         >
-                          <span>{isIn ? '✅' : '⚪'}</span>
+                          {p.avatar ? (
+                            <img
+                              src={p.avatar}
+                              alt={p.name}
+                              className="w-4 h-4 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <span className="text-[11px]">{isIn ? '✅' : '⚪'}</span>
+                          )}
                           <span>{p.name}</span>
                           <span className="text-[10px] opacity-70">({p.position})</span>
                         </button>
@@ -697,6 +768,29 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
                               <XCircle className="w-5 h-5" />
                             )}
                           </div>
+
+                          {/* Member Avatar (clickable to change photo) */}
+                          <button
+                            type="button"
+                            onClick={() => setAvatarModalPlayer(player)}
+                            className="relative group shrink-0 cursor-pointer"
+                            title="Bấm để đổi ảnh đại diện"
+                          >
+                            {player.avatar ? (
+                              <img
+                                src={player.avatar}
+                                alt={player.name}
+                                className="w-8 h-8 rounded-full object-cover border border-zinc-700 group-hover:border-emerald-400 transition-colors"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-300 group-hover:border-emerald-400 transition-colors">
+                                {player.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Camera className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          </button>
 
                           {/* Position Badge */}
                           <span
@@ -937,11 +1031,18 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
         initialPlayer={editingPlayer}
       />
 
-  <QuickPasteModal
-    isOpen={isQuickPasteOpen}
-    onClose={() => setIsQuickPasteOpen(false)}
-    onImport={handleQuickPaste}
-  />
-    </div >
+      <QuickPasteModal
+        isOpen={isQuickPasteOpen}
+        onClose={() => setIsQuickPasteOpen(false)}
+        onImport={handleQuickPaste}
+      />
+
+      <AvatarModal
+        isOpen={Boolean(avatarModalPlayer)}
+        onClose={() => setAvatarModalPlayer(null)}
+        player={avatarModalPlayer}
+        onSaveAvatar={handleSaveAvatar}
+      />
+    </div>
   );
 }

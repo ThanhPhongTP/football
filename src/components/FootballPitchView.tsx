@@ -190,9 +190,9 @@ export default function FootballPitchView({
                                 isSelected ? 'scale-125 z-30' : isSwapTarget ? 'hover:scale-115 z-10' : 'hover:scale-105'
                               }`}
                             >
-                              {/* Shirt icon / Badge */}
+                              {/* Shirt icon / Avatar Badge */}
                               <div
-                                className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full ${shirtColor} border-2 shadow-lg flex items-center justify-center font-bold text-[10px] sm:text-xs transition-all ${
+                                className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full ${shirtColor} border-2 shadow-lg flex items-center justify-center font-bold text-[10px] sm:text-xs transition-all overflow-hidden ${
                                   isSelected
                                     ? 'ring-4 ring-amber-400 border-white shadow-amber-400/50 shadow-xl animate-pulse'
                                     : isSwapTarget
@@ -200,7 +200,11 @@ export default function FootballPitchView({
                                     : ''
                                 }`}
                               >
-                                <span>{posInfo.short}</span>
+                                {player.avatar ? (
+                                  <img src={player.avatar} alt={player.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span>{posInfo.short}</span>
+                                )}
                               </div>
 
                               {/* Name & Rating Label */}

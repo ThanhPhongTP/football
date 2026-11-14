@@ -44,6 +44,7 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
       position,
       rating,
       status: initialPlayer?.status || 'OUT',
+      avatar: initialPlayer?.avatar,
       matchesPlayed: initialPlayer?.matchesPlayed || 0,
       goals: initialPlayer?.goals || 0,
       assists: initialPlayer?.assists || 0,

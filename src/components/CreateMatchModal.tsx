@@ -290,3 +290,4 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
     </div>
   );
 }
+

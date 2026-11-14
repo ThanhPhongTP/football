@@ -91,11 +91,17 @@ export default function TeamCard({
                     }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${posMeta.badgeClass}`}
-                    >
-                      {player.position}
-                    </span>
+                    {player.avatar ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-zinc-700 shrink-0">
+                        <img src={player.avatar} alt={player.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${posMeta.badgeClass}`}
+                      >
+                        {player.position}
+                      </span>
+                    )}
                     <div>
                       <span className="text-sm font-semibold text-white block leading-tight">
                         {player.name}

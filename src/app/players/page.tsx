@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import AddPlayerModal from '@/components/AddPlayerModal';
+import AvatarModal from '@/components/AvatarModal';
 import { useClubStore } from '@/lib/club-store';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Player, Position, POSITION_LABELS } from '@/types/football';
@@ -19,6 +20,7 @@ import {
   ArrowUpDown,
   Filter,
   Lock,
+  Camera,
 } from 'lucide-react';
 
 export default function PlayersPage() {
@@ -30,6 +32,7 @@ export default function PlayersPage() {
   const [sortBy, setSortBy] = useState<'rating' | 'goals' | 'assists' | 'matches' | 'winrate'>('rating');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [avatarModalPlayer, setAvatarModalPlayer] = useState<Player | null>(null);
 
   // Filter & Sort
   const processedPlayers = useMemo(() => {
@@ -73,6 +76,15 @@ export default function PlayersPage() {
     if (confirm(`Bạn có chắc muốn xóa cầu thủ "${name}" khỏi danh sách đội?`)) {
       deletePlayer(id);
     }
+  };
+
+  const handleSaveAvatar = (playerId: string, avatarUrl: string | undefined) => {
+    const existing = roster.find((p) => p.id === playerId);
+    if (!existing) return;
+    upsertPlayer({
+      ...existing,
+      avatar: avatarUrl,
+    });
   };
 
   return (
@@ -181,12 +193,22 @@ export default function PlayersPage() {
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    {/* Jersey avatar */}
+                    {/* Player Avatar (Clickable by member to change) */}
                     <div
-                      className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center font-black text-sm text-emerald-400 shadow-inner group-hover:border-emerald-500/50 transition-colors"
+                      onClick={() => setAvatarModalPlayer(player)}
+                      title="Bấm để đổi ảnh đại diện (Thành viên có thể tự đổi)"
+                      className="relative w-12 h-12 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800 flex items-center justify-center font-black text-sm text-emerald-400 shadow-inner group-hover:border-emerald-500/50 transition-colors cursor-pointer shrink-0"
                     >
-                      {posMeta.short}
+                      {player.avatar ? (
+                        <img src={player.avatar} alt={player.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{posMeta.short}</span>
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                        <Camera className="w-4 h-4 text-emerald-300" />
+                      </div>
                     </div>
+
                     <div>
                       <h3 className="font-extrabold text-base text-white group-hover:text-emerald-400 transition-colors">
                         {player.name}
@@ -203,6 +225,13 @@ export default function PlayersPage() {
                             <span>{player.rating}/10</span>
                           </span>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setAvatarModalPlayer(player)}
+                          className="text-[10px] text-zinc-400 hover:text-emerald-400 underline cursor-pointer"
+                        >
+                          Đổi ảnh
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -272,7 +301,7 @@ export default function PlayersPage() {
         </div>
       </main>
 
-      {/* Modal */}
+      {/* Modals */}
       <AddPlayerModal
         key={editingPlayer?.id || (isAddModalOpen ? 'new_player' : 'closed')}
         isOpen={isAddModalOpen}
@@ -282,6 +311,14 @@ export default function PlayersPage() {
         }}
         onAdd={handleSavePlayer}
         initialPlayer={editingPlayer}
+      />
+
+      <AvatarModal
+        key={avatarModalPlayer?.id || 'no_avatar_modal'}
+        isOpen={!!avatarModalPlayer}
+        player={avatarModalPlayer}
+        onClose={() => setAvatarModalPlayer(null)}
+        onSaveAvatar={handleSaveAvatar}
       />
     </div>
   );
