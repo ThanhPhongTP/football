@@ -15,7 +15,6 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
   const [name, setName] = useState(initialPlayer?.name || '');
   const [position, setPosition] = useState<Position>(initialPlayer?.position || 'MID');
   const [rating, setRating] = useState<number>(initialPlayer?.rating || 7);
-  const [status, setStatus] = useState<'IN' | 'OUT'>(initialPlayer?.status === 'OUT' ? 'OUT' : 'IN');
 
   // Sync state whenever initialPlayer or isOpen changes so edit always gets the correct player
   useEffect(() => {
@@ -23,12 +22,10 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
       setName(initialPlayer.name || '');
       setPosition(initialPlayer.position || 'MID');
       setRating(initialPlayer.rating || 7);
-      setStatus(initialPlayer.status === 'OUT' ? 'OUT' : 'IN');
     } else {
       setName('');
       setPosition('MID');
       setRating(7);
-      setStatus('IN');
     }
   }, [initialPlayer, isOpen]);
 
@@ -46,7 +43,7 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
       name: name.trim(),
       position,
       rating,
-      status,
+      status: initialPlayer?.status || 'OUT',
       matchesPlayed: initialPlayer?.matchesPlayed || 0,
       goals: initialPlayer?.goals || 0,
       assists: initialPlayer?.assists || 0,
@@ -162,36 +159,6 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
             </div>
           </div>
 
-          {/* Status */}
-          <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-              Trạng thái trận này
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setStatus('IN')}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${
-                  status === 'IN'
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                    : 'bg-zinc-950 text-zinc-400 border-zinc-800'
-                }`}
-              >
-                ✅ Có mặt (IN)
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatus('OUT')}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${
-                  status === 'OUT'
-                    ? 'bg-rose-500/20 text-rose-400 border-rose-500/40'
-                    : 'bg-zinc-950 text-zinc-400 border-zinc-800'
-                }`}
-              >
-                ❌ Báo bận (OUT)
-              </button>
-            </div>
-          </div>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
