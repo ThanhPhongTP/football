@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Upload, Image as ImageIcon, Check, Trash2, Camera, Sparkles } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Check, Trash2, Camera } from 'lucide-react';
 import { Player, POSITION_LABELS } from '@/types/football';
 
 interface AvatarModalProps {
@@ -10,17 +10,6 @@ interface AvatarModalProps {
   onClose: () => void;
   onSaveAvatar: (playerId: string, avatarUrl: string | undefined) => void;
 }
-
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1570498839593-e565b3d4f6fc?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
-];
 
 function compressImage(file: File, maxWidth = 240, maxHeight = 240): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -58,7 +47,7 @@ function compressImage(file: File, maxWidth = 240, maxHeight = 240): Promise<str
 }
 
 export default function AvatarModal({ isOpen, player, onClose, onSaveAvatar }: AvatarModalProps) {
-  const [activeTab, setActiveTab] = useState<'upload' | 'presets' | 'url'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(player?.avatar);
   const [customUrl, setCustomUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -188,18 +177,6 @@ export default function AvatarModal({ isOpen, player, onClose, onSaveAvatar }: A
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('presets')}
-              className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === 'presets'
-                  ? 'bg-emerald-500 text-zinc-950 shadow-md'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Ảnh mẫu</span>
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveTab('url')}
               className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === 'url'
@@ -242,35 +219,7 @@ export default function AvatarModal({ isOpen, player, onClose, onSaveAvatar }: A
             </div>
           )}
 
-          {/* Tab 2: Presets */}
-          {activeTab === 'presets' && (
-            <div className="space-y-2">
-              <label className="text-zinc-400 block font-medium">Bấm chọn ảnh phong cách bóng đá:</label>
-              <div className="grid grid-cols-4 gap-2.5">
-                {PRESET_AVATARS.map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setAvatarPreview(url)}
-                    className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${
-                      avatarPreview === url
-                        ? 'border-emerald-400 ring-2 ring-emerald-400/50 scale-105'
-                        : 'border-zinc-800 hover:border-zinc-600'
-                    }`}
-                  >
-                    <img src={url} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
-                    {avatarPreview === url && (
-                      <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                        <Check className="w-5 h-5 text-emerald-300 stroke-[3]" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: URL */}
+          {/* Tab 2: URL */}
           {activeTab === 'url' && (
             <div className="space-y-2.5">
               <label className="text-zinc-400 block font-medium">Dán link ảnh đại diện (URL trực tiếp):</label>
@@ -316,3 +265,4 @@ export default function AvatarModal({ isOpen, player, onClose, onSaveAvatar }: A
     </div>
   );
 }
+
