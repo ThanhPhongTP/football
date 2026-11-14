@@ -108,6 +108,13 @@ function PollContent({ params }: { params: Promise<{ id: string }> }) {
     return () => clearInterval(interval);
   }, [fetchPoll, pollId]);
 
+  // If poll has an associated match, redirect to the unified match room
+  useEffect(() => {
+    if (poll?.matchId) {
+      router.replace(`/match/${poll.matchId}`);
+    }
+  }, [poll, router]);
+
   // Derived lists
   const yesVotes = useMemo(() => {
     return poll?.votes.filter((v) => v.status === 'YES') || [];

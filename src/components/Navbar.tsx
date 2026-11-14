@@ -27,13 +27,11 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: '/draw', label: 'Chia đội', icon: Sparkles },
-    { href: '/polls', label: 'Điểm danh', icon: ClipboardList },
     { href: '/matches', label: 'Trận đấu', icon: Calendar },
     { href: '/players', label: 'Cầu thủ', icon: Users },
+    { href: '/cost-splitter', label: 'Chia tiền sân', icon: Receipt },
     { href: '/stats', label: 'Thống kê', icon: BarChart3 },
     { href: '/compare', label: 'So sánh', icon: Scale },
-    { href: '/cost-splitter', label: 'Chia tiền sân', icon: Receipt },
   ];
 
   return (

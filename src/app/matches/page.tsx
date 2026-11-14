@@ -246,19 +246,10 @@ export default function MatchesPage() {
                       )}
 
                       <Link
-                        href={m.pollId ? `/poll/${m.pollId}` : `/polls?matchId=${m.id}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-400 border border-teal-500/30 text-xs font-bold transition-colors"
-                        title="Điểm danh qua link bình chọn Zalo"
-                      >
-                        <ClipboardList className="w-3.5 h-3.5" />
-                        <span>Điểm danh</span>
-                      </Link>
-
-                      <Link
                         href={`/match/${m.id}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-colors"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
                       >
-                        <span>Mở phòng</span>
+                        <span>Vào trận (Điểm danh & Sa bàn)</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>

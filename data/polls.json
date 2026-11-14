@@ -1,37 +1,37 @@
 [
   {
-    "updatedAt": 1794586824236,
+    "time": "17:00 - 18:30",
+    "format": "5v5",
+    "date": "2026-11-18",
+    "title": "Nội chiến FC Anh Em - Thứ 4",
+    "createdAt": 1794585730019,
+    "status": "OPEN",
+    "id": "poll-mwf60bfn-lgp7",
+    "venue": "Sân bóng D7 Phú Mỹ Hưng",
+    "updatedAt": 1794626915673,
+    "venueMapUrl": "https://maps.app.goo.gl/LDVujJNsrG3UYhd98",
+    "notes": "Anh em mang 2 áo (Áo Cam & Áo Xanh dương)",
     "votes": [
       {
         "id": "v_1794586205267_mtv4",
         "playerName": "Thanh Phong",
         "playerId": "p_8",
-        "status": "NO",
+        "status": "YES",
         "position": "MID",
         "rating": 8,
-        "updatedAt": 1794586824236
+        "updatedAt": 1794626915672
       },
       {
-        "updatedAt": 1794586722731,
-        "rating": 8,
-        "status": "NO",
         "playerId": "p_15",
-        "position": "FWD",
         "id": "v_1794586478251_ys4k",
-        "playerName": "Hoàng Châu"
+        "status": "NO",
+        "rating": 8,
+        "updatedAt": 1794586722731,
+        "playerName": "Hoàng Châu",
+        "position": "FWD"
       }
     ],
-    "time": "17:00 - 18:30",
-    "createdAt": 1794585730019,
-    "format": "5v5",
-    "id": "poll-mwf60bfn-lgp7",
-    "notes": "Anh em mang 2 áo (Áo Cam & Áo Xanh dương)",
     "targetPlayers": 10,
-    "status": "OPEN",
-    "date": "2026-11-18",
-    "title": "Nội chiến FC Anh Em - Thứ 4",
-    "matchId": "match_mwf4vibz_gl9b",
-    "venue": "Sân bóng D7 Phú Mỹ Hưng",
-    "venueMapUrl": "https://maps.app.goo.gl/LDVujJNsrG3UYhd98"
+    "matchId": "match_mwf4vibz_gl9b"
   }
 ]

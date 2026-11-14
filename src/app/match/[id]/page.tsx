@@ -38,6 +38,7 @@ import {
   ArrowRight,
   Shield,
   Layers,
+  UserCheck,
 } from 'lucide-react';
 
 export default function MatchRoomPage({ params }: { params: Promise<{ id: string }> }) {
@@ -74,58 +75,47 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
   const [attendanceFilter, setAttendanceFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [activeTab, setActiveTab] = useState<'pitch' | 'cards'>('pitch');
   const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState<Player | null>(null);
-  const [isCreatingPoll, setIsCreatingPoll] = useState(false);
+  // Quick self-voting state
+  const [voterName, setVoterName] = useState('');
+  const [showChangeName, setShowChangeName] = useState(false);
 
-  const handleOpenOrCreatePoll = async () => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('footdraw_voter_name') || '';
+      if (saved) {
+        setVoterName(saved);
+      }
+    }
+  }, []);
+
+  const voterPlayer = useMemo(() => {
+    if (!voterName || !match?.players) return null;
+    return match.players.find(
+      (p) => p.name.trim().toLowerCase() === voterName.trim().toLowerCase()
+    );
+  }, [voterName, match?.players]);
+
+  const isVoterIn = voterPlayer?.status === 'IN';
+
+  const handleSelfVote = (playerName: string, nextStatus: 'IN' | 'OUT') => {
     if (!match) return;
-    if (match.pollId) {
-      router.push(`/poll/${match.pollId}`);
-      return;
+    const targetName = playerName.trim();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('footdraw_voter_name', targetName);
     }
+    setVoterName(targetName);
+    setShowChangeName(false);
 
-    setIsCreatingPoll(true);
-    try {
-      const activeVotes = (match.players || [])
-        .filter((p) => p.status === 'IN')
-        .map((p) => ({
-          id: `v_${p.id}`,
-          playerId: p.id,
-          playerName: p.name,
-          status: 'YES' as const,
-          position: p.position,
-          rating: p.rating,
-          updatedAt: Date.now(),
-        }));
+    const updatedPlayers = (match.players || []).map((p) =>
+      p.name.trim().toLowerCase() === targetName.toLowerCase()
+        ? { ...p, status: nextStatus }
+        : p
+    );
 
-      const res = await fetch('/api/polls', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matchId: match.id,
-          title: match.title,
-          date: match.date,
-          time: match.time,
-          venue: match.venue,
-          venueMapUrl: match.venueMapUrl,
-          format: match.format,
-          targetPlayers: match.targetPlayers,
-          notes: match.notes,
-          votes: activeVotes,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Không thể tạo đợt điểm danh');
-      const newPoll = await res.json();
-      saveMatch({
-        ...match,
-        pollId: newPoll.id,
-      });
-      router.push(`/poll/${newPoll.id}`);
-    } catch {
-      alert('Lỗi khi tạo đợt điểm danh.');
-    } finally {
-      setIsCreatingPoll(false);
-    }
+    saveMatch({
+      ...match,
+      players: updatedPlayers,
+    });
   };
 
   // Auto-seed initial 16 club players if match players list is empty
@@ -436,32 +426,17 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
               )}
             </div>
 
-            {/* Actions: Copy Link to Zalo & Poll */}
+            {/* Actions: Copy Link to Zalo */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button
-                onClick={handleOpenOrCreatePoll}
-                disabled={isCreatingPoll}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-teal-500/20 to-emerald-500/20 hover:from-teal-500/30 hover:to-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
-              >
-                <ClipboardList className="w-4 h-4 text-emerald-400" />
-                <span>
-                  {isCreatingPoll
-                    ? 'Đang tạo poll...'
-                    : match.pollId
-                    ? '🗳️ Xem Poll Điểm Danh'
-                    : '🗳️ Tạo Poll Điểm Danh'}
-                </span>
-              </button>
-
-              <button
                 onClick={handleCopyLink}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-lg active:scale-95 ${copiedLink
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'
+                className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg active:scale-95 cursor-pointer ${copiedLink
+                    ? 'bg-emerald-500 text-zinc-950 shadow-emerald-500/25'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
                   }`}
               >
                 {copiedLink ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Share2 className="w-4 h-4" />}
-                <span>{copiedLink ? 'Đã sao chép link!' : 'Copy link gửi Zalo'}</span>
+                <span>{copiedLink ? 'Đã sao chép link!' : 'Copy link gửi Zalo cho anh em'}</span>
               </button>
             </div>
           </div>
@@ -507,11 +482,149 @@ function MatchRoomContent({ params }: { params: Promise<{ id: string }> }) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Player Management & Attendance (5 Cols) */}
           <div className="lg:col-span-5 space-y-4">
+            {/* Quick Member Attendance / Self-voting */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3.5">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-emerald-400" />
+                  <h3 className="font-bold text-base text-white">Điểm danh thi đấu</h3>
+                </div>
+                <span className="text-[11px] text-zinc-400">
+                  Tự chọn tên để tham gia
+                </span>
+              </div>
+
+              {/* Case A: User has selected/remembered name */}
+              {voterName && !showChangeName ? (
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-400">Xin chào,</span>
+                        <strong className="text-sm text-white font-bold">{voterName}</strong>
+                        {voterPlayer && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold">
+                            {voterPlayer.position}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-xs">
+                        <span className="text-zinc-400">Trạng thái:</span>
+                        {isVoterIn ? (
+                          <span className="font-bold text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 fill-emerald-500/20" />
+                            ĐÃ BÁO CÓ MẶT (ĐI ĐÁ)
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-rose-400 flex items-center gap-1">
+                            <XCircle className="w-3.5 h-3.5" />
+                            ĐÃ BÁO BẬN (KHÔNG ĐI)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowChangeName(true)}
+                      className="text-xs text-zinc-400 hover:text-white underline cursor-pointer"
+                    >
+                      Đổi tên
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    {isVoterIn ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSelfVote(voterName, 'OUT')}
+                        className="flex-1 py-2 px-3 rounded-xl bg-zinc-800 hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 border border-zinc-700 hover:border-rose-500/40 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+                      >
+                        ❌ Báo bận (Nghỉ)
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelfVote(voterName, 'IN')}
+                        className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                      >
+                        ✅ Xác nhận Tham gia (Đi đá)
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Case B: Select name chip */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-zinc-300 font-semibold block">
+                      👉 Bấm chọn tên của bạn:
+                    </label>
+                    {voterName && (
+                      <span className="text-xs text-emerald-400 font-medium">
+                        Đang chọn: <strong className="text-white underline">{voterName}</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 max-h-[190px] overflow-y-auto pr-1">
+                    {(match.players || []).map((p) => {
+                      const isIn = p.status === 'IN';
+                      const isSelected = voterName === p.name;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setVoterName(p.name);
+                            setShowChangeName(false);
+                          }}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                            isSelected
+                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/50'
+                              : isIn
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                              : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                          }`}
+                        >
+                          <span>{isIn ? '✅' : '⚪'}</span>
+                          <span>{p.name}</span>
+                          <span className="text-[10px] opacity-70">({p.position})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Vote Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      disabled={!voterName}
+                      onClick={() => voterName && handleSelfVote(voterName, 'IN')}
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>✅ Tôi Tham Gia (Đi đá)</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!voterName}
+                      onClick={() => voterName && handleSelfVote(voterName, 'OUT')}
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-700 hover:border-rose-500/40 font-semibold text-xs transition-all active:scale-95 cursor-pointer"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>❌ Báo Bận (Không đi)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Attendance Summary List */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-xl">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-emerald-400" />
-                  <h3 className="font-bold text-base text-white">Danh sách điểm danh</h3>
+                  <h3 className="font-bold text-base text-white">Danh sách thành viên</h3>
                 </div>
                 <span className="text-xs text-zinc-400">
                   Tổng: <strong className="text-white">{match.players.length}</strong>
