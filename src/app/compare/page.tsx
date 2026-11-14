@@ -125,8 +125,12 @@ export default function ComparePage() {
 
             {playerA && (
               <div className="pt-2 space-y-1">
-                <div className="w-16 h-16 rounded-2xl bg-orange-500/20 border-2 border-orange-500/50 text-orange-400 text-lg font-black flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20">
-                  {POSITION_LABELS[playerA.position].short}
+                <div className="w-16 h-16 rounded-2xl bg-orange-500/20 border-2 border-orange-500/50 text-orange-400 text-lg font-black flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20 overflow-hidden">
+                  {playerA.avatar ? (
+                    <img src={playerA.avatar} alt={playerA.name} className="w-full h-full object-cover" />
+                  ) : (
+                    POSITION_LABELS[playerA.position].short
+                  )}
                 </div>
                 <h3 className="font-black text-lg text-white">{playerA.name}</h3>
                 <span className="text-xs text-zinc-400 font-semibold block">
@@ -166,8 +170,12 @@ export default function ComparePage() {
 
             {playerB && (
               <div className="pt-2 space-y-1">
-                <div className="w-16 h-16 rounded-2xl bg-blue-500/20 border-2 border-blue-500/50 text-blue-400 text-lg font-black flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20">
-                  {POSITION_LABELS[playerB.position].short}
+                <div className="w-16 h-16 rounded-2xl bg-blue-500/20 border-2 border-blue-500/50 text-blue-400 text-lg font-black flex items-center justify-center mx-auto shadow-lg shadow-blue-500/20 overflow-hidden">
+                  {playerB.avatar ? (
+                    <img src={playerB.avatar} alt={playerB.name} className="w-full h-full object-cover" />
+                  ) : (
+                    POSITION_LABELS[playerB.position].short
+                  )}
                 </div>
                 <h3 className="font-black text-lg text-white">{playerB.name}</h3>
                 <span className="text-xs text-zinc-400 font-semibold block">

@@ -495,6 +495,14 @@ function DrawContent() {
                               {player.position}
                             </span>
 
+                            {player.avatar && (
+                              <img
+                                src={player.avatar}
+                                alt={player.name}
+                                className="w-5 h-5 rounded-full object-cover border border-zinc-700 shrink-0"
+                              />
+                            )}
+
                             <span className="text-xs font-semibold text-white truncate block">
                               {player.name}
                             </span>

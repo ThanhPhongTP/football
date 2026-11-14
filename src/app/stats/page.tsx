@@ -156,8 +156,17 @@ export default function StatsPage() {
               {/* 2nd Place */}
               {second && (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 text-center relative overflow-hidden order-2 md:order-1 shadow-lg">
-                  <div className="w-10 h-10 rounded-full bg-slate-300 text-zinc-950 font-black text-sm flex items-center justify-center mx-auto mb-2 border-2 border-white shadow-md">
-                    2
+                  <div className="relative mx-auto mb-2 w-14 h-14">
+                    {second.avatar ? (
+                      <img src={second.avatar} alt={second.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-300 shadow-md" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-slate-300 text-zinc-950 font-black text-sm flex items-center justify-center border-2 border-white shadow-md">
+                        {second.name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-300 text-zinc-950 font-black text-xs flex items-center justify-center border-2 border-zinc-900 shadow">
+                      2
+                    </span>
                   </div>
                   <h3 className="font-extrabold text-base text-white">{second.name}</h3>
                   <span className="text-[10px] text-zinc-400 block mb-2">{second.position}</span>
@@ -171,8 +180,18 @@ export default function StatsPage() {
               {first && (
                 <div className="bg-gradient-to-b from-amber-500/10 via-zinc-900 to-zinc-900 border-2 border-amber-500/40 rounded-3xl p-6 text-center relative overflow-hidden order-1 md:order-2 shadow-2xl scale-105 z-10">
                   <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-zinc-950 font-black text-base flex items-center justify-center mx-auto mb-2 border-2 border-amber-200 shadow-xl shadow-amber-500/30">
-                    👑 1
+                  <div className="relative mx-auto mb-2 w-16 h-16">
+                    {first.avatar ? (
+                      <img src={first.avatar} alt={first.name} className="w-16 h-16 rounded-full object-cover border-2 border-amber-300 shadow-xl shadow-amber-500/30" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-zinc-950 font-black text-base flex items-center justify-center border-2 border-amber-200 shadow-xl shadow-amber-500/30">
+                        {first.name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-base leading-none">👑</span>
+                    <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-zinc-950 font-black text-xs flex items-center justify-center border-2 border-zinc-900 shadow">
+                      1
+                    </span>
                   </div>
                   <h3 className="font-black text-lg text-white">{first.name}</h3>
                   <span className="text-xs text-amber-400 font-semibold block mb-2">{first.position}</span>
@@ -185,8 +204,17 @@ export default function StatsPage() {
               {/* 3rd Place */}
               {third && (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 text-center relative overflow-hidden order-3 shadow-lg">
-                  <div className="w-10 h-10 rounded-full bg-amber-700 text-white font-black text-sm flex items-center justify-center mx-auto mb-2 border-2 border-amber-600 shadow-md">
-                    3
+                  <div className="relative mx-auto mb-2 w-14 h-14">
+                    {third.avatar ? (
+                      <img src={third.avatar} alt={third.name} className="w-14 h-14 rounded-full object-cover border-2 border-amber-600 shadow-md" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-amber-700 text-white font-black text-sm flex items-center justify-center border-2 border-amber-600 shadow-md">
+                        {third.name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-700 text-white font-black text-xs flex items-center justify-center border-2 border-zinc-900 shadow">
+                      3
+                    </span>
                   </div>
                   <h3 className="font-extrabold text-base text-white">{third.name}</h3>
                   <span className="text-[10px] text-zinc-400 block mb-2">{third.position}</span>
@@ -243,7 +271,20 @@ export default function StatsPage() {
                         {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
                       </td>
                       <td className="py-3 px-4 font-bold text-white group-hover:text-emerald-400 transition-colors">
-                        {p.name}
+                        <div className="flex items-center gap-2.5">
+                          {p.avatar ? (
+                            <img
+                              src={p.avatar}
+                              alt={p.name}
+                              className="w-7 h-7 rounded-full object-cover border border-zinc-700 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-bold text-zinc-300 shrink-0">
+                              {p.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate">{p.name}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span
