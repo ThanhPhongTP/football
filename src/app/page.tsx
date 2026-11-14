@@ -223,7 +223,10 @@ export default function HomePage() {
             </div>
           ) : (
             filteredMatches.map((m) => {
-              const isCompleted = m.status === 'COMPLETED';
+              const hasScore = m.score !== undefined && m.score !== null;
+              const isCompleted = m.status === 'COMPLETED' || hasScore;
+              const s1 = m.score?.team1 ?? 0;
+              const s2 = m.score?.team2 ?? 0;
               const team1 = m.teams[0];
               const team2 = m.teams[1];
               const mvp = roster.find((p) => p.id === m.mvpPlayerId);
@@ -304,14 +307,14 @@ export default function HomePage() {
 
                     {/* Score Center */}
                     <div className="text-center py-1">
-                      {isCompleted ? (
+                      {hasScore || isCompleted ? (
                         <div className="flex items-center justify-center gap-3 font-mono font-black text-2xl sm:text-3xl text-white">
-                          <span className={team1Score > team2Score ? 'text-emerald-400' : 'text-zinc-300'}>
-                            {m.score?.team1 ?? team1Score}
+                          <span className={s1 > s2 ? 'text-emerald-400' : 'text-zinc-300'}>
+                            {s1}
                           </span>
                           <span className="text-zinc-600">-</span>
-                          <span className={team2Score > team1Score ? 'text-emerald-400' : 'text-zinc-300'}>
-                            {m.score?.team2 ?? team2Score}
+                          <span className={s2 > s1 ? 'text-emerald-400' : 'text-zinc-300'}>
+                            {s2}
                           </span>
                         </div>
                       ) : (

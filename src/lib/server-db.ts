@@ -114,7 +114,8 @@ export async function savePoll(poll: AttendancePoll): Promise<AttendancePoll> {
   const db = getServerDb();
   if (db) {
     try {
-      await setDoc(doc(db, 'polls', updatedPoll.id), updatedPoll);
+      const cleanData = JSON.parse(JSON.stringify(updatedPoll));
+      await setDoc(doc(db, 'polls', updatedPoll.id), cleanData);
     } catch (err) {
       console.warn('Firestore savePoll error:', err);
     }
@@ -423,7 +424,8 @@ export async function saveMatch(match: Match): Promise<Match> {
   const db = getServerDb();
   if (db) {
     try {
-      await setDoc(doc(db, 'matches', updatedMatch.id), updatedMatch);
+      const cleanData = JSON.parse(JSON.stringify(updatedMatch));
+      await setDoc(doc(db, 'matches', updatedMatch.id), cleanData);
     } catch (err) {
       console.warn('Firestore saveMatch error:', err);
     }

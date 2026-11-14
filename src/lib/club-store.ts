@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Player, Match, INITIAL_ROSTER, GoalEvent, AssistEvent, MatchCost } from '@/types/football';
+import { initFirebase } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const ROSTER_STORAGE_KEY = 'footdraw_club_roster';
 const MATCHES_STORAGE_KEY = 'footdraw_club_matches';
@@ -111,19 +113,47 @@ export function useClubStore() {
     [roster, saveRoster]
   );
 
-  // Upsert Match
+  // Upsert Match (Local storage + Cloud Firestore + Server DB API)
   const upsertMatch = useCallback(
     (match: Match) => {
-      const idx = matches.findIndex((m) => m.id === match.id);
-      let updated: Match[];
-      if (idx >= 0) {
-        updated = matches.map((m) => (m.id === match.id ? match : m));
-      } else {
-        updated = [match, ...matches];
+      const withTimestamp: Match = {
+        ...match,
+        updatedAt: Date.now(),
+      };
+
+      setMatches((prev) => {
+        const idx = prev.findIndex((m) => m.id === withTimestamp.id);
+        const updated = idx >= 0 ? prev.map((m) => (m.id === withTimestamp.id ? withTimestamp : m)) : [withTimestamp, ...prev];
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(updated));
+          localStorage.setItem(`footdraw_match_${withTimestamp.id}`, JSON.stringify(withTimestamp));
+        }
+        return updated;
+      });
+
+      // Push to API & Cloud
+      if (typeof window !== 'undefined') {
+        fetch(`/api/matches/${withTimestamp.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(withTimestamp),
+        }).catch((err) => console.warn('Could not sync match to API:', err));
+
+        // Sync directly to Firestore if available
+        const { db } = initFirebase();
+        if (db) {
+          try {
+            const cleanDoc = JSON.parse(JSON.stringify(withTimestamp));
+            setDoc(doc(db, 'matches', withTimestamp.id), cleanDoc, { merge: true }).catch((err) =>
+              console.warn('Could not sync match to Firestore:', err)
+            );
+          } catch {
+            // ignore
+          }
+        }
       }
-      saveMatches(updated);
     },
-    [matches, saveMatches]
+    []
   );
 
   // Record Result of a finished Match & Update Player Statistics
@@ -141,6 +171,7 @@ export function useClubStore() {
       const targetMatch = matches.find((m) => m.id === matchId);
       if (!targetMatch) return;
 
+      const wasCompleted = targetMatch.status === 'COMPLETED';
       const team1Won = result.score.team1 > result.score.team2;
       const team2Won = result.score.team2 > result.score.team1;
       const isDraw = result.score.team1 === result.score.team2;
@@ -148,10 +179,22 @@ export function useClubStore() {
       // Update Roster Player Stats
       const updatedRoster = roster.map((player) => {
         // Was this player in team 1 or team 2?
-        const inTeam1 = targetMatch.teams[0]?.players.some((p) => p.id === player.id);
-        const inTeam2 = targetMatch.teams[1]?.players.some((p) => p.id === player.id);
+        const inTeam1 = (targetMatch.teams[0]?.players || []).some((p) => p.id === player.id);
+        const inTeam2 = (targetMatch.teams[1]?.players || []).some((p) => p.id === player.id);
 
         if (!inTeam1 && !inTeam2) return player;
+
+        // If previously completed, subtract previous stats for this match first
+        const prevGoals = wasCompleted ? (targetMatch.goalEvents || []).filter((g) => g.playerId === player.id).length : 0;
+        const prevAssists = wasCompleted ? (targetMatch.assistEvents || []).filter((a) => a.playerId === player.id).length : 0;
+        const prevMvp = wasCompleted && targetMatch.mvpPlayerId === player.id ? 1 : 0;
+
+        const prevTeam1Won = (targetMatch.score?.team1 ?? 0) > (targetMatch.score?.team2 ?? 0);
+        const prevTeam2Won = (targetMatch.score?.team2 ?? 0) > (targetMatch.score?.team1 ?? 0);
+        const prevIsDraw = wasCompleted && (targetMatch.score?.team1 ?? 0) === (targetMatch.score?.team2 ?? 0);
+        const prevWon = wasCompleted && ((inTeam1 && prevTeam1Won) || (inTeam2 && prevTeam2Won)) ? 1 : 0;
+        const prevLost = wasCompleted && ((inTeam1 && prevTeam2Won) || (inTeam2 && prevTeam1Won)) ? 1 : 0;
+        const prevDraw = prevIsDraw ? 1 : 0;
 
         const playerGoals = result.goalEvents.filter((g) => g.playerId === player.id).length;
         const playerAssists = result.assistEvents.filter((a) => a.playerId === player.id).length;
@@ -162,13 +205,13 @@ export function useClubStore() {
 
         return {
           ...player,
-          matchesPlayed: player.matchesPlayed + 1,
-          goals: player.goals + playerGoals,
-          assists: player.assists + playerAssists,
-          wins: player.wins + (won ? 1 : 0),
-          losses: player.losses + (lost ? 1 : 0),
-          draws: player.draws + (isDraw ? 1 : 0),
-          mvpCount: player.mvpCount + (isMvp ? 1 : 0),
+          matchesPlayed: Math.max(0, player.matchesPlayed + (wasCompleted ? 0 : 1)),
+          goals: Math.max(0, player.goals - prevGoals + playerGoals),
+          assists: Math.max(0, player.assists - prevAssists + playerAssists),
+          wins: Math.max(0, player.wins - prevWon + (won ? 1 : 0)),
+          losses: Math.max(0, player.losses - prevLost + (lost ? 1 : 0)),
+          draws: Math.max(0, player.draws - prevDraw + (isDraw ? 1 : 0)),
+          mvpCount: Math.max(0, player.mvpCount - prevMvp + (isMvp ? 1 : 0)),
         };
       });
 
@@ -183,7 +226,7 @@ export function useClubStore() {
         assistEvents: result.assistEvents,
         mvpPlayerId: result.mvpPlayerId,
         cost: result.cost,
-        teams: targetMatch.teams.map((t, idx) => ({
+        teams: (targetMatch.teams || []).map((t, idx) => ({
           ...t,
           score: idx === 0 ? result.score.team1 : idx === 1 ? result.score.team2 : result.score.team3 || 0,
         })),
