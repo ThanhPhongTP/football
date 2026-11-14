@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
@@ -40,8 +40,10 @@ export default function HomePage() {
   const [mvpPlayerId, setMvpPlayerId] = useState<string>('');
   const [selectedScorerId, setSelectedScorerId] = useState<string>('');
   const [selectedScorerTeam, setSelectedScorerTeam] = useState<number>(1);
+  const [scorerGoalCount, setScorerGoalCount] = useState<number>(1);
   const [selectedAssisterId, setSelectedAssisterId] = useState<string>('');
   const [selectedAssisterTeam, setSelectedAssisterTeam] = useState<number>(1);
+  const [assisterCount, setAssisterCount] = useState<number>(1);
 
   const filteredMatches = matches.filter((m) => {
     if (filter === 'UPCOMING') return m.status !== 'COMPLETED';
@@ -51,58 +53,165 @@ export default function HomePage() {
 
   const handleOpenRecordModal = (match: Match) => {
     setRecordingMatch(match);
-    setTeam1Score(match.score?.team1 || 0);
-    setTeam2Score(match.score?.team2 || 0);
-    setGoalEvents(match.goalEvents || []);
+    const gEvents = match.goalEvents || [];
+    const gTeam1 = gEvents.filter((g) => g.teamId === 1).length;
+    const gTeam2 = gEvents.filter((g) => g.teamId === 2).length;
+    setTeam1Score(match.score?.team1 !== undefined ? match.score.team1 : gTeam1);
+    setTeam2Score(match.score?.team2 !== undefined ? match.score.team2 : gTeam2);
+    setGoalEvents(gEvents);
     setAssistEvents(match.assistEvents || []);
     setMvpPlayerId(match.mvpPlayerId || '');
+    setSelectedScorerId('');
+    setSelectedScorerTeam(1);
+    setSelectedAssisterId('');
+    setSelectedAssisterTeam(1);
+    setScorerGoalCount(1);
+    setAssisterCount(1);
   };
 
-  const handleAddGoal = () => {
-    if (!selectedScorerId) return;
+  const handleSelectScorer = (playerId: string) => {
+    setSelectedScorerId(playerId);
+    if (recordingMatch?.teams) {
+      if (recordingMatch.teams[0]?.players.some((p) => p.id === playerId)) {
+        setSelectedScorerTeam(1);
+      } else if (recordingMatch.teams[1]?.players.some((p) => p.id === playerId)) {
+        setSelectedScorerTeam(2);
+      } else if (recordingMatch.teams[2]?.players.some((p) => p.id === playerId)) {
+        setSelectedScorerTeam(3);
+      }
+    }
+  };
+
+  const handleAddGoal = (count: number = scorerGoalCount) => {
+    if (!selectedScorerId || count <= 0) return;
     const player = roster.find((p) => p.id === selectedScorerId);
     if (!player) return;
 
-    setGoalEvents([
-      ...goalEvents,
-      {
-        id: `g_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+    const newEvents: GoalEvent[] = Array.from({ length: count }, () => ({
+      id: `g_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      playerId: player.id,
+      playerName: player.name,
+      teamId: selectedScorerTeam,
+    }));
+
+    setGoalEvents((prev) => [...prev, ...newEvents]);
+
+    // Automatically update team score
+    if (selectedScorerTeam === 1) setTeam1Score((prev) => prev + count);
+    if (selectedScorerTeam === 2) setTeam2Score((prev) => prev + count);
+
+    setScorerGoalCount(1);
+  };
+
+  const handlePlayerGoalAdjust = (playerId: string, teamId: number, delta: number) => {
+    if (delta > 0) {
+      const player = roster.find((p) => p.id === playerId);
+      if (!player) return;
+      const newEvent: GoalEvent = {
+        id: `g_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         playerId: player.id,
         playerName: player.name,
-        teamId: selectedScorerTeam,
-      },
-    ]);
-
-    // increment corresponding score
-    if (selectedScorerTeam === 1) setTeam1Score((prev) => prev + 1);
-    if (selectedScorerTeam === 2) setTeam2Score((prev) => prev + 1);
+        teamId,
+      };
+      setGoalEvents((prev) => [...prev, newEvent]);
+      if (teamId === 1) setTeam1Score((prev) => prev + 1);
+      if (teamId === 2) setTeam2Score((prev) => prev + 1);
+    } else if (delta < 0) {
+      const idx = goalEvents.findIndex((g) => g.playerId === playerId && g.teamId === teamId);
+      if (idx >= 0) {
+        setGoalEvents((prev) => prev.filter((_, i) => i !== idx));
+        if (teamId === 1 && team1Score > 0) setTeam1Score((prev) => prev - 1);
+        if (teamId === 2 && team2Score > 0) setTeam2Score((prev) => prev - 1);
+      }
+    }
   };
 
-  const handleRemoveGoal = (id: string, teamId: number) => {
-    setGoalEvents(goalEvents.filter((g) => g.id !== id));
-    if (teamId === 1 && team1Score > 0) setTeam1Score((prev) => prev - 1);
-    if (teamId === 2 && team2Score > 0) setTeam2Score((prev) => prev - 1);
+  const handleRemoveAllGoalsForPlayer = (playerId: string, teamId: number) => {
+    const countToRemove = goalEvents.filter((g) => g.playerId === playerId && g.teamId === teamId).length;
+    setGoalEvents((prev) => prev.filter((g) => !(g.playerId === playerId && g.teamId === teamId)));
+    if (teamId === 1) setTeam1Score((prev) => Math.max(0, prev - countToRemove));
+    if (teamId === 2) setTeam2Score((prev) => Math.max(0, prev - countToRemove));
   };
 
-  const handleAddAssist = () => {
-    if (!selectedAssisterId) return;
+  const groupedGoals = useMemo(() => {
+    const map = new Map<string, { playerId: string; playerName: string; teamId: number; count: number }>();
+    for (const g of goalEvents) {
+      const key = `${g.playerId}_${g.teamId}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(key, { playerId: g.playerId, playerName: g.playerName, teamId: g.teamId, count: 1 });
+      }
+    }
+    return Array.from(map.values());
+  }, [goalEvents]);
+
+  const handleSelectAssister = (playerId: string) => {
+    setSelectedAssisterId(playerId);
+    if (recordingMatch?.teams) {
+      if (recordingMatch.teams[0]?.players.some((p) => p.id === playerId)) {
+        setSelectedAssisterTeam(1);
+      } else if (recordingMatch.teams[1]?.players.some((p) => p.id === playerId)) {
+        setSelectedAssisterTeam(2);
+      } else if (recordingMatch.teams[2]?.players.some((p) => p.id === playerId)) {
+        setSelectedAssisterTeam(3);
+      }
+    }
+  };
+
+  const handleAddAssist = (count: number = assisterCount) => {
+    if (!selectedAssisterId || count <= 0) return;
     const player = roster.find((p) => p.id === selectedAssisterId);
     if (!player) return;
 
-    setAssistEvents([
-      ...assistEvents,
-      {
-        id: `a_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
-        playerId: player.id,
-        playerName: player.name,
-        teamId: selectedAssisterTeam,
-      },
-    ]);
+    const newEvents: AssistEvent[] = Array.from({ length: count }, () => ({
+      id: `a_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      playerId: player.id,
+      playerName: player.name,
+      teamId: selectedAssisterTeam,
+    }));
+
+    setAssistEvents((prev) => [...prev, ...newEvents]);
+    setAssisterCount(1);
   };
 
-  const handleRemoveAssist = (id: string) => {
-    setAssistEvents(assistEvents.filter((a) => a.id !== id));
+  const handlePlayerAssistAdjust = (playerId: string, teamId: number, delta: number) => {
+    if (delta > 0) {
+      const player = roster.find((p) => p.id === playerId);
+      if (!player) return;
+      const newEvent: AssistEvent = {
+        id: `a_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        playerId: player.id,
+        playerName: player.name,
+        teamId,
+      };
+      setAssistEvents((prev) => [...prev, newEvent]);
+    } else if (delta < 0) {
+      const idx = assistEvents.findIndex((a) => a.playerId === playerId && a.teamId === teamId);
+      if (idx >= 0) {
+        setAssistEvents((prev) => prev.filter((_, i) => i !== idx));
+      }
+    }
   };
+
+  const handleRemoveAllAssistsForPlayer = (playerId: string, teamId: number) => {
+    setAssistEvents((prev) => prev.filter((a) => !(a.playerId === playerId && a.teamId === teamId)));
+  };
+
+  const groupedAssists = useMemo(() => {
+    const map = new Map<string, { playerId: string; playerName: string; teamId: number; count: number }>();
+    for (const a of assistEvents) {
+      const key = `${a.playerId}_${a.teamId}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(key, { playerId: a.playerId, playerName: a.playerName, teamId: a.teamId, count: 1 });
+      }
+    }
+    return Array.from(map.values());
+  }, [assistEvents]);
 
   const handleSaveResult = () => {
     if (!recordingMatch) return;
@@ -373,16 +482,49 @@ export default function HomePage() {
                   {m.goalEvents && m.goalEvents.length > 0 && (
                     <div className="pt-2 border-t border-zinc-800/80 flex flex-wrap items-center gap-2 text-xs">
                       <span className="text-zinc-500 font-medium">Bàn thắng:</span>
-                      {m.goalEvents.map((g) => (
-                        <span
-                          key={g.id}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-300"
-                        >
-                          <span>⚽</span>
-                          <span className="font-semibold">{g.playerName}</span>
-                          {g.minute ? <span className="text-zinc-500">{g.minute}&apos;</span> : null}
-                        </span>
-                      ))}
+                      {(() => {
+                        const counts: Record<string, number> = {};
+                        for (const g of m.goalEvents) {
+                          counts[g.playerName] = (counts[g.playerName] || 0) + 1;
+                        }
+                        return Object.entries(counts).map(([name, count]) => (
+                          <span
+                            key={name}
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-300"
+                          >
+                            <span>⚽</span>
+                            <span className="font-semibold text-white">{name}</span>
+                            {count > 1 && (
+                              <span className="text-emerald-400 font-bold font-mono">({count})</span>
+                            )}
+                          </span>
+                        ));
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Assist events list */}
+                  {m.assistEvents && m.assistEvents.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-zinc-500 font-medium">Kiến tạo:</span>
+                      {(() => {
+                        const counts: Record<string, number> = {};
+                        for (const a of m.assistEvents) {
+                          counts[a.playerName] = (counts[a.playerName] || 0) + 1;
+                        }
+                        return Object.entries(counts).map(([name, count]) => (
+                          <span
+                            key={name}
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-300"
+                          >
+                            <span>👟</span>
+                            <span className="font-semibold text-white">{name}</span>
+                            {count > 1 && (
+                              <span className="text-teal-400 font-bold font-mono">({count})</span>
+                            )}
+                          </span>
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
@@ -416,12 +558,17 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+            <div className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
               {/* Score Input */}
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-2 uppercase tracking-wide">
-                  Tỷ số chung cuộc
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wide">
+                    Tỷ số trận đấu
+                  </label>
+                  <span className="text-[11px] text-zinc-400">
+                    💡 Tự động cập nhật theo số bàn thắng ghi nhận bên dưới
+                  </span>
+                </div>
                 <div className="grid grid-cols-3 items-center gap-3 bg-zinc-950 p-4 rounded-2xl border border-zinc-800 text-center">
                   <div>
                     <span className="text-xs text-orange-400 font-bold block mb-1">
@@ -431,12 +578,12 @@ export default function HomePage() {
                       type="number"
                       min={0}
                       value={team1Score}
-                      onChange={(e) => setTeam1Score(Number(e.target.value))}
-                      className="w-16 h-12 text-center text-2xl font-black bg-zinc-900 border border-zinc-700 rounded-xl mx-auto focus:border-emerald-500 text-white"
+                      onChange={(e) => setTeam1Score(Math.max(0, Number(e.target.value)))}
+                      className="w-16 h-12 text-center text-2xl font-black bg-zinc-900 border border-zinc-700 rounded-xl mx-auto focus:border-emerald-500 text-white font-mono"
                     />
                   </div>
 
-                  <span className="text-xl font-bold text-zinc-600">-</span>
+                  <span className="text-2xl font-bold text-zinc-600">-</span>
 
                   <div>
                     <span className="text-xs text-blue-400 font-bold block mb-1">
@@ -446,116 +593,298 @@ export default function HomePage() {
                       type="number"
                       min={0}
                       value={team2Score}
-                      onChange={(e) => setTeam2Score(Number(e.target.value))}
-                      className="w-16 h-12 text-center text-2xl font-black bg-zinc-900 border border-zinc-700 rounded-xl mx-auto focus:border-emerald-500 text-white"
+                      onChange={(e) => setTeam2Score(Math.max(0, Number(e.target.value)))}
+                      className="w-16 h-12 text-center text-2xl font-black bg-zinc-900 border border-zinc-700 rounded-xl mx-auto focus:border-emerald-500 text-white font-mono"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Goal Scorers */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5 uppercase tracking-wide">
-                  ⚽ Thêm cầu thủ ghi bàn
-                </label>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedScorerId}
-                    onChange={(e) => setSelectedScorerId(e.target.value)}
-                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">-- Chọn cầu thủ ghi bàn --</option>
-                    {roster.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.position})
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedScorerTeam}
-                    onChange={(e) => setSelectedScorerTeam(Number(e.target.value))}
-                    className="bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-white"
-                  >
-                    <option value={1}>Đội Cam</option>
-                    <option value={2}>Đội Xanh</option>
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={handleAddGoal}
-                    className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold"
-                  >
-                    + Thêm
-                  </button>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>⚽</span>
+                    <span>Ghi bàn thắng</span>
+                  </label>
+                  <span className="text-[11px] text-emerald-400 font-medium">
+                    Tổng: {goalEvents.length} bàn
+                  </span>
                 </div>
 
-                {/* Goals list */}
-                {goalEvents.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {goalEvents.map((g) => (
-                      <span
-                        key={g.id}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs"
+                {/* Input row */}
+                <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                    {/* Player select (6 cols) */}
+                    <div className="sm:col-span-6">
+                      <select
+                        value={selectedScorerId}
+                        onChange={(e) => handleSelectScorer(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                       >
-                        <span>⚽ {g.playerName}</span>
-                        <button
-                          onClick={() => handleRemoveGoal(g.id, g.teamId)}
-                          className="text-zinc-500 hover:text-rose-400"
-                        >
-                          ✕
-                        </button>
-                      </span>
+                        <option value="">-- Chọn cầu thủ ghi bàn --</option>
+                        {roster.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.position})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Team select (3 cols) */}
+                    <div className="sm:col-span-3">
+                      <select
+                        value={selectedScorerTeam}
+                        onChange={(e) => setSelectedScorerTeam(Number(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-white font-medium"
+                      >
+                        <option value={1}>{recordingMatch.teams[0]?.name || 'Đội Cam'}</option>
+                        <option value={2}>{recordingMatch.teams[1]?.name || 'Đội Xanh'}</option>
+                        {recordingMatch.teams[2] && (
+                          <option value={3}>{recordingMatch.teams[2].name}</option>
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Goal quantity (3 cols) */}
+                    <div className="sm:col-span-3 flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={scorerGoalCount}
+                        onChange={(e) => setScorerGoalCount(Math.max(1, Number(e.target.value)))}
+                        className="w-12 bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-xs text-white font-bold font-mono focus:border-emerald-500"
+                        title="Số lượng bàn thắng"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddGoal()}
+                        disabled={!selectedScorerId}
+                        className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 text-xs font-bold transition-all shadow cursor-pointer text-center"
+                      >
+                        + Thêm
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick goal count chips */}
+                  <div className="flex items-center gap-1.5 pt-1 text-[11px] text-zinc-400">
+                    <span className="text-[10px] text-zinc-500">Chọn nhanh:</span>
+                    {[1, 2, 3, 4].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => {
+                          setScorerGoalCount(num);
+                          if (selectedScorerId) {
+                            handleAddGoal(num);
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-semibold cursor-pointer transition-colors ${
+                          scorerGoalCount === num
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
+                        }`}
+                      >
+                        {num === 3 ? '3 bàn (Hat-trick)' : num === 4 ? '4 bàn (Poker)' : `${num} bàn`}
+                      </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Grouped Goals List */}
+                {groupedGoals.length > 0 && (
+                  <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                    {groupedGoals.map((item) => {
+                      const isTeam1 = item.teamId === 1;
+                      const teamName = isTeam1
+                        ? recordingMatch.teams[0]?.name || 'Đội Cam'
+                        : recordingMatch.teams[1]?.name || 'Đội Xanh';
+                      return (
+                        <div
+                          key={`${item.playerId}_${item.teamId}`}
+                          className="flex items-center justify-between p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm">⚽</span>
+                            <div className="truncate">
+                              <span className="font-bold text-white block truncate">{item.playerName}</span>
+                              <span
+                                className={`text-[10px] font-semibold ${
+                                  isTeam1 ? 'text-orange-400' : 'text-blue-400'
+                                }`}
+                              >
+                                {teamName}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold font-mono">
+                              {item.count} bàn
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handlePlayerGoalAdjust(item.playerId, item.teamId, -1)}
+                                className="w-6 h-6 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold flex items-center justify-center text-xs cursor-pointer active:scale-95"
+                                title="Giảm 1 bàn"
+                              >
+                                -
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePlayerGoalAdjust(item.playerId, item.teamId, 1)}
+                                className="w-6 h-6 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold flex items-center justify-center text-xs cursor-pointer active:scale-95"
+                                title="Tăng 1 bàn"
+                              >
+                                +
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAllGoalsForPlayer(item.playerId, item.teamId)}
+                                className="w-6 h-6 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs ml-1 cursor-pointer"
+                                title="Xoá tất cả bàn của cầu thủ này"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
               {/* Assists */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5 uppercase tracking-wide">
-                  👟 Thêm cầu thủ kiến tạo
-                </label>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedAssisterId}
-                    onChange={(e) => setSelectedAssisterId(e.target.value)}
-                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">-- Chọn cầu thủ kiến tạo --</option>
-                    {roster.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.position})
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={handleAddAssist}
-                    className="px-3 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-zinc-950 text-xs font-bold"
-                  >
-                    + Thêm
-                  </button>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>👟</span>
+                    <span>Kiến tạo bàn thắng</span>
+                  </label>
+                  <span className="text-[11px] text-teal-400 font-medium">
+                    Tổng: {assistEvents.length} kiến tạo
+                  </span>
                 </div>
 
-                {/* Assists list */}
-                {assistEvents.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {assistEvents.map((a) => (
-                      <span
-                        key={a.id}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs"
+                {/* Input row */}
+                <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                    <div className="sm:col-span-6">
+                      <select
+                        value={selectedAssisterId}
+                        onChange={(e) => handleSelectAssister(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
                       >
-                        <span>👟 {a.playerName}</span>
-                        <button
-                          onClick={() => handleRemoveAssist(a.id)}
-                          className="text-zinc-500 hover:text-rose-400"
+                        <option value="">-- Chọn cầu thủ kiến tạo --</option>
+                        {roster.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.position})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <select
+                        value={selectedAssisterTeam}
+                        onChange={(e) => setSelectedAssisterTeam(Number(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-white font-medium"
+                      >
+                        <option value={1}>{recordingMatch.teams[0]?.name || 'Đội Cam'}</option>
+                        <option value={2}>{recordingMatch.teams[1]?.name || 'Đội Xanh'}</option>
+                        {recordingMatch.teams[2] && (
+                          <option value={3}>{recordingMatch.teams[2].name}</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-3 flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={assisterCount}
+                        onChange={(e) => setAssisterCount(Math.max(1, Number(e.target.value)))}
+                        className="w-12 bg-zinc-900 border border-zinc-800 rounded-xl py-2 text-center text-xs text-white font-bold font-mono focus:border-teal-500"
+                        title="Số lượng kiến tạo"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddAssist()}
+                        disabled={!selectedAssisterId}
+                        className="flex-1 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 text-xs font-bold transition-all shadow cursor-pointer text-center"
+                      >
+                        + Thêm
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grouped Assists List */}
+                {groupedAssists.length > 0 && (
+                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    {groupedAssists.map((item) => {
+                      const isTeam1 = item.teamId === 1;
+                      const teamName = isTeam1
+                        ? recordingMatch.teams[0]?.name || 'Đội Cam'
+                        : recordingMatch.teams[1]?.name || 'Đội Xanh';
+                      return (
+                        <div
+                          key={`${item.playerId}_${item.teamId}`}
+                          className="flex items-center justify-between p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs"
                         >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm">👟</span>
+                            <div className="truncate">
+                              <span className="font-bold text-white block truncate">{item.playerName}</span>
+                              <span
+                                className={`text-[10px] font-semibold ${
+                                  isTeam1 ? 'text-orange-400' : 'text-blue-400'
+                                }`}
+                              >
+                                {teamName}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="px-2 py-0.5 rounded-md bg-teal-500/15 border border-teal-500/30 text-teal-400 font-bold font-mono">
+                              {item.count} kiến tạo
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handlePlayerAssistAdjust(item.playerId, item.teamId, -1)}
+                                className="w-6 h-6 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold flex items-center justify-center text-xs cursor-pointer active:scale-95"
+                                title="Giảm 1 kiến tạo"
+                              >
+                                -
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePlayerAssistAdjust(item.playerId, item.teamId, 1)}
+                                className="w-6 h-6 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold flex items-center justify-center text-xs cursor-pointer active:scale-95"
+                                title="Tăng 1 kiến tạo"
+                              >
+                                +
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAllAssistsForPlayer(item.playerId, item.teamId)}
+                                className="w-6 h-6 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs ml-1 cursor-pointer"
+                                title="Xoá tất cả kiến tạo của cầu thủ này"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
