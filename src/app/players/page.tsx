@@ -25,7 +25,7 @@ import {
 
 export default function PlayersPage() {
   const { isAdmin, openPasswordModal } = useAdminAuth();
-  const { roster, upsertPlayer, deletePlayer } = useClubStore();
+  const { roster, matches, upsertPlayer, deletePlayer, upsertMatch } = useClubStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPosition, setSelectedPosition] = useState<'ALL' | Position>('ALL');
@@ -85,6 +85,25 @@ export default function PlayersPage() {
       ...existing,
       avatar: avatarUrl,
     });
+
+    // Also sync avatar to any existing matches
+    for (const m of matches) {
+      const hasPlayer = m.players?.some((p) => p.id === playerId);
+      if (hasPlayer) {
+        const updatedPlayers = (m.players || []).map((p) =>
+          p.id === playerId ? { ...p, avatar: avatarUrl } : p
+        );
+        const updatedTeams = (m.teams || []).map((t) => ({
+          ...t,
+          players: t.players.map((p) => (p.id === playerId ? { ...p, avatar: avatarUrl } : p)),
+        }));
+        upsertMatch({
+          ...m,
+          players: updatedPlayers,
+          teams: updatedTeams,
+        });
+      }
+    }
   };
 
   return (
