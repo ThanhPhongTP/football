@@ -44,6 +44,17 @@ export function useMatchSync(matchId: string, initialMatch?: Match | null) {
             setLastUpdated(Date.now());
             // save local backup
             localStorage.setItem(`footdraw_match_${matchId}`, JSON.stringify(data));
+          } else {
+            // Document not yet in Firestore, sync from server API or localStorage
+            fetch(`/api/matches/${matchId}`)
+              .then((res) => (res.ok ? res.json() : null))
+              .then((serverMatch) => {
+                if (serverMatch && serverMatch.id === matchId) {
+                  setMatch(serverMatch);
+                  setDoc(matchDocRef, serverMatch, { merge: true }).catch(() => {});
+                }
+              })
+              .catch(() => {});
           }
         },
         (error) => {
@@ -123,7 +134,25 @@ export function useMatchSync(matchId: string, initialMatch?: Match | null) {
       return () => clearTimeout(fallbackTimer);
     }
 
+    // 3. Fallback background sync (every 5s) to guarantee freshness across devices
+    const pollInterval = setInterval(() => {
+      fetch(`/api/matches/${matchId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.id === matchId) {
+            setMatch((prev) => {
+              if (!prev || (data.updatedAt && data.updatedAt > (prev.updatedAt || 0))) {
+                return data;
+              }
+              return prev;
+            });
+          }
+        })
+        .catch(() => {});
+    }, 5000);
+
     return () => {
+      clearInterval(pollInterval);
       if (unsubscribeFirestore) {
         unsubscribeFirestore();
       }
