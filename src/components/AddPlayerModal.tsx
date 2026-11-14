@@ -67,28 +67,33 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in overflow-y-auto">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-lg sm:max-w-xl p-6 sm:p-8 shadow-2xl overflow-hidden my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <UserPlus className="w-4 h-4" />
+        <div className="flex items-center justify-between pb-5 border-b border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <UserPlus className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-semibold text-white">
-              {initialPlayer ? 'Chỉnh sửa cầu thủ' : 'Thêm cầu thủ mới'}
-            </h3>
+            <div>
+              <h3 className="text-lg font-bold text-white">
+                {initialPlayer ? 'Chỉnh sửa cầu thủ' : 'Thêm cầu thủ mới'}
+              </h3>
+              <p className="text-xs text-zinc-400">
+                {initialPlayer ? 'Cập nhật tên, vị trí và trình độ' : 'Thêm thành viên mới vào danh sách đội bóng'}
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-zinc-400 hover:text-white">
+          <button onClick={onClose} className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-zinc-300 mb-2 uppercase tracking-wide">
               Tên cầu thủ <span className="text-rose-400">*</span>
             </label>
             <input
@@ -98,16 +103,16 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ví dụ: Hoàng Long, Tuấn Em..."
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-3 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-medium"
             />
           </div>
 
           {/* Position */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold text-zinc-300 mb-2 uppercase tracking-wide">
               Vị trí sở trường
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               {positions.map((pos) => {
                 const isSelected = position === pos.key;
                 const posMeta = POSITION_LABELS[pos.key];
@@ -116,16 +121,16 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
                     key={pos.key}
                     type="button"
                     onClick={() => setPosition(pos.key)}
-                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                    className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? `${posMeta.badgeClass} bg-zinc-800/90 font-semibold ring-1 ring-emerald-500/50`
+                        ? `${posMeta.badgeClass} bg-zinc-800/90 font-semibold ring-1 ring-emerald-500/50 shadow-md`
                         : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
                     }`}
                   >
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">
+                    <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800">
                       {pos.label}
                     </span>
-                    <span className="text-xs truncate">{pos.desc}</span>
+                    <span className="text-xs sm:text-sm truncate">{pos.desc}</span>
                   </button>
                 );
               })}
@@ -134,11 +139,11 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
 
           {/* Rating */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-zinc-300">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-wide">
                 Đánh giá trình độ (Rating)
               </label>
-              <div className="flex items-center gap-1 text-amber-400 font-bold text-sm">
+              <div className="flex items-center gap-1.5 text-amber-400 font-bold text-sm sm:text-base bg-amber-400/10 px-3 py-1 rounded-xl border border-amber-400/20">
                 <Star className="w-4 h-4 fill-amber-400" />
                 <span>{rating} / 10 điểm</span>
               </div>
@@ -150,9 +155,9 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
               step={1}
               value={rating}
               onChange={(e) => setRating(Number(e.target.value))}
-              className="w-full accent-emerald-500 h-2 bg-zinc-950 rounded-lg cursor-pointer"
+              className="w-full accent-emerald-500 h-2.5 bg-zinc-950 rounded-lg cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-zinc-500 mt-1">
+            <div className="flex justify-between text-[11px] text-zinc-400 mt-1.5 font-medium">
               <span>1 (Mới tập)</span>
               <span>5 (Trung bình)</span>
               <span>8 (Khá cứng)</span>
@@ -160,19 +165,18 @@ export default function AddPlayerModal({ isOpen, onClose, onAdd, initialPlayer }
             </div>
           </div>
 
-
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white"
+              className="px-5 py-2.5 text-sm font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20 transition-all active:scale-95"
+              className="px-6 py-2.5 text-sm font-bold rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
             >
               {initialPlayer ? 'Lưu thay đổi' : 'Thêm cầu thủ'}
             </button>

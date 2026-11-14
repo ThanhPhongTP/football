@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Calendar, Plus, ArrowRight } from 'lucide-react';
+import { X, Calendar, ArrowRight, MapPin, Users, Clock, FileText } from 'lucide-react';
 import { Match, INITIAL_ROSTER } from '@/types/football';
+import { useClubStore } from '@/lib/club-store';
 
 interface CreateMatchModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface CreateMatchModalProps {
 
 export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMatchModalProps) {
   const router = useRouter();
+  const { roster } = useClubStore();
 
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
@@ -52,6 +54,7 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
 
     setIsSubmitting(true);
     const matchId = `match_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+    const baseRoster = (roster && roster.length > 0) ? roster : INITIAL_ROSTER;
 
     const newMatch: Match = {
       id: matchId,
@@ -65,7 +68,7 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
       numberOfTeams,
       notes: notes.trim(),
       status: 'SCHEDULED',
-      players: INITIAL_ROSTER.map((p) => ({ ...p, status: 'OUT' })),
+      players: baseRoster.map((p) => ({ ...p, status: 'OUT' })),
       teams: [],
       isDrawn: false,
       createdAt: Date.now(),
@@ -97,33 +100,35 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in overflow-y-auto">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-2xl sm:max-w-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/60">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <Calendar className="w-4 h-4" />
+        <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-zinc-800 bg-zinc-950/70 shrink-0">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
+              <Calendar className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Tạo trận đấu mới</h3>
-              <p className="text-[11px] text-zinc-400">Thiết lập thông tin và mở phòng điểm danh & sa bàn</p>
+              <h3 className="font-bold text-white text-lg sm:text-xl">Tạo trận đấu mới</h3>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+                Thiết lập thông tin trận đấu, mở phòng điểm danh & chia đội sa bàn
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Modal Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8 overflow-y-auto space-y-5 flex-1">
           {/* Title */}
           <div>
-            <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
+            <label className="block text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
               Tên trận đấu <span className="text-rose-400">*</span>
             </label>
             <input
@@ -131,82 +136,86 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="VD: Nội chiến FC Anh Em - Thứ 4"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+              placeholder="VD: Nội chiến FC Anh Em - Thứ 4 hàng tuần"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-3 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-medium"
             />
           </div>
 
           {/* Date & Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-                Ngày thi đấu
+              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+                <Calendar className="w-4 h-4 text-emerald-400" />
+                <span>Ngày thi đấu</span>
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
             <div>
-              <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-                Khung giờ
+              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+                <Clock className="w-4 h-4 text-emerald-400" />
+                <span>Khung giờ thi đấu</span>
               </label>
               <input
                 type="text"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 placeholder="VD: 17:00 - 18:30"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
 
           {/* Venue & Maps URL */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-                Sân bóng / Địa điểm
+              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+                <MapPin className="w-4 h-4 text-emerald-400" />
+                <span>Sân bóng / Địa điểm</span>
               </label>
               <input
                 type="text"
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
                 placeholder="VD: Sân bóng D7 Phú Mỹ Hưng"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
             <div>
-              <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-                Link Google Maps
+              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+                <span className="text-emerald-400">📍</span>
+                <span>Link Google Maps</span>
               </label>
               <input
                 type="url"
                 value={venueMapUrl}
                 onChange={(e) => setVenueMapUrl(e.target.value)}
                 placeholder="https://maps.app.goo.gl/..."
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
 
           {/* Format & Target Players */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
                 Quy mô sân
               </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {(['5v5', '7v7', '11v11'] as const).map((fmt) => (
                   <button
                     key={fmt}
                     type="button"
                     onClick={() => handleFormatChange(fmt)}
-                    className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    className={`py-2.5 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
                       format === fmt
-                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold'
-                        : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-black shadow-md shadow-emerald-500/20'
+                        : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
                     }`}
                   >
                     {fmt}
@@ -216,8 +225,9 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
             </div>
 
             <div>
-              <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-                Quân số mục tiêu (Người)
+              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+                <Users className="w-4 h-4 text-emerald-400" />
+                <span>Quân số mục tiêu (Người)</span>
               </label>
               <input
                 type="number"
@@ -225,29 +235,39 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
                 max={50}
                 value={targetPlayers}
                 onChange={(e) => setTargetPlayers(Number(e.target.value))}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white font-mono font-bold focus:outline-none focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
 
           {/* Number of Teams */}
           <div>
-            <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-              Chia làm mấy đội?
+            <label className="block text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+              Chia làm mấy đội thi đấu?
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {([2, 3, 4] as const).map((num) => (
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { num: 2 as const, label: '2 Đội', sub: 'Đối kháng trực tiếp' },
+                { num: 3 as const, label: '3 Đội', sub: 'Tam hùng xoay tua' },
+                { num: 4 as const, label: '4 Đội', sub: 'Tứ hùng chia bảng' },
+              ]).map((item) => (
                 <button
-                  key={num}
+                  key={item.num}
                   type="button"
-                  onClick={() => setNumberOfTeams(num)}
-                  className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                    numberOfTeams === num
-                      ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold shadow-sm'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
+                  onClick={() => setNumberOfTeams(item.num)}
+                  className={`py-3 px-3 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    numberOfTeams === item.num
+                      ? 'bg-emerald-500/15 border-emerald-500/60 text-white shadow-md shadow-emerald-500/10'
+                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
                   }`}
                 >
-                  {num} Đội {num === 2 ? '(Đối kháng)' : num === 3 ? '(Tam hùng)' : ''}
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className={`font-bold text-sm sm:text-base ${numberOfTeams === item.num ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                      {item.label}
+                    </span>
+                    <span className={`w-2.5 h-2.5 rounded-full ${numberOfTeams === item.num ? 'bg-emerald-400 shadow-sm shadow-emerald-400' : 'bg-zinc-700'}`} />
+                  </div>
+                  <span className="text-[11px] sm:text-xs text-zinc-400">{item.sub}</span>
                 </button>
               ))}
             </div>
@@ -255,34 +275,35 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
 
           {/* Notes */}
           <div>
-            <label className="block font-bold text-zinc-200 mb-1.5 uppercase tracking-wide">
-              Ghi chú cho anh em (Màu áo, giờ giấc...)
+            <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
+              <FileText className="w-4 h-4 text-emerald-400" />
+              <span>Ghi chú cho anh em (Màu áo, lưu ý...)</span>
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="VD: Mang 2 màu áo Cam & Xanh, đến trước 15p..."
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+              placeholder="VD: Mang 2 màu áo Cam & Xanh, đến trước 15p khởi động, chuẩn bị nước uống..."
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all resize-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs text-zinc-400 hover:text-white font-semibold"
+              className="px-5 py-3 rounded-xl text-sm text-zinc-400 hover:text-white font-semibold transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold text-sm sm:text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             >
               <span>Tạo trận & Mở phòng</span>
-              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         </form>
