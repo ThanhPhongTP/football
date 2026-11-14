@@ -6,7 +6,6 @@ import { useClubStore } from '@/lib/club-store';
 import { POSITION_LABELS } from '@/types/football';
 import {
   Trophy,
-  Flame,
   Medal,
   Award,
   Crown,
@@ -19,19 +18,12 @@ import {
 
 export default function StatsPage() {
   const { roster, matches } = useClubStore();
-  const [activeTab, setActiveTab] = useState<'scorers' | 'assists' | 'mvp' | 'winrate'>('scorers');
+  const [activeTab, setActiveTab] = useState<'scorers' | 'assists' | 'mvp'>('scorers');
 
   // Sorted categories
   const topScorers = [...roster].sort((a, b) => b.goals - a.goals);
   const topAssists = [...roster].sort((a, b) => b.assists - a.assists);
   const topMvps = [...roster].sort((a, b) => b.mvpCount - a.mvpCount);
-  const topWinRates = [...roster]
-    .filter((p) => p.matchesPlayed >= 3)
-    .sort((a, b) => {
-      const wrA = (a.wins / a.matchesPlayed) * 100;
-      const wrB = (b.wins / b.matchesPlayed) * 100;
-      return wrB - wrA;
-    });
 
   // Overall Club Totals
   const totalGoals = roster.reduce((sum, p) => sum + p.goals, 0);
@@ -77,7 +69,7 @@ export default function StatsPage() {
         </div>
 
         {/* Category Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-zinc-900/60 p-1.5 rounded-2xl border border-zinc-800 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-zinc-900/60 p-1.5 rounded-2xl border border-zinc-800 text-xs">
           <button
             onClick={() => setActiveTab('scorers')}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
@@ -113,18 +105,6 @@ export default function StatsPage() {
             <Trophy className="w-4 h-4" />
             <span>Danh hiệu MVP</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('winrate')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
-              activeTab === 'winrate'
-                ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Flame className="w-4 h-4" />
-            <span>Tỷ lệ thắng (Win %)</span>
-          </button>
         </div>
 
         {/* Podium for Top 3 */}
@@ -134,9 +114,7 @@ export default function StatsPage() {
               ? topScorers
               : activeTab === 'assists'
               ? topAssists
-              : activeTab === 'mvp'
-              ? topMvps
-              : topWinRates;
+              : topMvps;
 
           const first = list[0];
           const second = list[1];
@@ -146,9 +124,7 @@ export default function StatsPage() {
             if (!p) return '';
             if (activeTab === 'scorers') return `${p.goals} bàn thắng`;
             if (activeTab === 'assists') return `${p.assists} kiến tạo`;
-            if (activeTab === 'mvp') return `${p.mvpCount} lần MVP`;
-            const wr = p.matchesPlayed > 0 ? Math.round((p.wins / p.matchesPlayed) * 100) : 0;
-            return `${wr}% Thắng (${p.wins}/${p.matchesPlayed})`;
+            return `${p.mvpCount} lần MVP`;
           };
 
           return (
@@ -254,9 +230,7 @@ export default function StatsPage() {
                   ? topScorers
                   : activeTab === 'assists'
                   ? topAssists
-                  : activeTab === 'mvp'
-                  ? topMvps
-                  : topWinRates
+                  : topMvps
                 ).map((p, idx) => {
                   const pos = POSITION_LABELS[p.position];
                   const winRate =
