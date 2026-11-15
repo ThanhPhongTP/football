@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean-db": "node scripts/clean-database.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
