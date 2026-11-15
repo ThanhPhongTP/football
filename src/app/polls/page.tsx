@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { AttendancePoll, Match, getGoogleMapsUrl, PollVote } from '@/types/football';
+import { DatePickerField, TimePickerField } from '@/components/DateTimePicker';
 import {
   Calendar,
   Clock,
@@ -576,26 +577,19 @@ ${pollUrl}`;
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-zinc-300 font-semibold mb-1">Ngày thi đấu:</label>
-                        <input
-                          type="date"
-                          value={date}
-                          onChange={(e) => setDate(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-zinc-300 font-semibold mb-1">Khung giờ:</label>
-                        <input
-                          type="text"
-                          value={time}
-                          onChange={(e) => setTime(e.target.value)}
-                          placeholder="20:00 - 21:30"
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                        />
-                      </div>
+                      <DatePickerField
+                        value={date}
+                        onChange={(newDate) => {
+                          setDate(newDate);
+                          if (newDate) {
+                            setTitle(`Điểm danh đá bóng - ${newDate}`);
+                          }
+                        }}
+                      />
+                      <TimePickerField
+                        value={time}
+                        onChange={(newTime) => setTime(newTime)}
+                      />
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">

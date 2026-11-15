@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, Calendar, ArrowRight, MapPin, Users, Clock, FileText } from 'lucide-react';
 import { Match, INITIAL_ROSTER } from '@/types/football';
 import { useClubStore } from '@/lib/club-store';
+import { DatePickerField, TimePickerField } from '@/components/DateTimePicker';
 
 interface CreateMatchModalProps {
   isOpen: boolean;
@@ -141,33 +142,21 @@ export default function CreateMatchModal({ isOpen, onClose, onCreate }: CreateMa
             />
           </div>
 
-          {/* Date & Time */}
+          {/* Date & Time with Popup Pickers */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
-                <Calendar className="w-4 h-4 text-emerald-400" />
-                <span>Ngày thi đấu</span>
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-emerald-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-zinc-200 mb-2 uppercase tracking-wide">
-                <Clock className="w-4 h-4 text-emerald-400" />
-                <span>Khung giờ thi đấu</span>
-              </label>
-              <input
-                type="text"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                placeholder="VD: 17:00 - 18:30"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-2.5 text-sm sm:text-base text-white focus:outline-none focus:border-emerald-500 transition-all"
-              />
-            </div>
+            <DatePickerField
+              value={date}
+              onChange={(newDate) => {
+                setDate(newDate);
+                if (newDate) {
+                  setTitle(`Nội chiến FC Anh Em - ${newDate}`);
+                }
+              }}
+            />
+            <TimePickerField
+              value={time}
+              onChange={(newTime) => setTime(newTime)}
+            />
           </div>
 
           {/* Venue & Maps URL */}
