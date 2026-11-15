@@ -181,19 +181,32 @@ interface TimePickerProps {
   label?: string;
 }
 
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+
 export function TimePickerField({ value, onChange, label = 'Khung giờ thi đấu' }: TimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Parse initial start and end time
-  const [startTime, setStartTime] = useState('17:30');
-  const [endTime, setEndTime] = useState('19:00');
+  // Parse initial start and end time (hours and minutes)
+  const [startHour, setStartHour] = useState('17');
+  const [startMinute, setStartMinute] = useState('30');
+  const [endHour, setEndHour] = useState('19');
+  const [endMinute, setEndMinute] = useState('00');
 
   useEffect(() => {
     if (value && value.includes('-')) {
       const parts = value.split('-').map((s) => s.trim());
-      if (parts[0]) setStartTime(parts[0]);
-      if (parts[1]) setEndTime(parts[1]);
+      if (parts[0] && parts[0].includes(':')) {
+        const [h, m] = parts[0].split(':');
+        if (h !== undefined) setStartHour(h.trim().padStart(2, '0'));
+        if (m !== undefined) setStartMinute(m.trim().padStart(2, '0'));
+      }
+      if (parts[1] && parts[1].includes(':')) {
+        const [h, m] = parts[1].split(':');
+        if (h !== undefined) setEndHour(h.trim().padStart(2, '0'));
+        if (m !== undefined) setEndMinute(m.trim().padStart(2, '0'));
+      }
     }
   }, [value, isOpen]);
 
@@ -211,31 +224,33 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
   }, [isOpen]);
 
   // Calculate duration between start and end
-  const calculateDuration = (start: string, end: string) => {
-    const [h1, m1] = start.split(':').map(Number);
-    const [h2, m2] = end.split(':').map(Number);
+  const calculateDuration = () => {
+    const h1 = Number(startHour);
+    const m1 = Number(startMinute);
+    const h2 = Number(endHour);
+    const m2 = Number(endMinute);
     if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return '';
     let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
     if (diff < 0) diff += 24 * 60; // across midnight
     const hours = Math.floor(diff / 60);
     const mins = diff % 60;
     if (hours === 0) return `${mins} phút`;
-    if (mins === 0) return `${hours} tiếng`;
+    if (mins === 0) return `${hours} tiếng (${diff} phút)`;
     return `${hours}h${mins > 0 ? `${mins}p` : ''} (${diff} phút)`;
   };
 
   const setQuickDuration = (minutes: number) => {
-    const [h, m] = startTime.split(':').map(Number);
-    if (!isNaN(h) && !isNaN(m)) {
-      const total = h * 60 + m + minutes;
-      const endH = Math.floor(total / 60) % 24;
-      const endM = total % 60;
-      setEndTime(`${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`);
-    }
+    const h = Number(startHour);
+    const m = Number(startMinute);
+    const total = h * 60 + m + minutes;
+    const newH = Math.floor(total / 60) % 24;
+    const newM = total % 60;
+    setEndHour(String(newH).padStart(2, '0'));
+    setEndMinute(String(newM).padStart(2, '0'));
   };
 
   const handleConfirm = () => {
-    const formatted = `${startTime} - ${endTime}`;
+    const formatted = `${startHour}:${startMinute} - ${endHour}:${endMinute}`;
     onChange(formatted);
     setIsOpen(false);
   };
@@ -281,30 +296,70 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
             </button>
           </div>
 
-          {/* Time Picker Inputs */}
+          {/* Time Picker Selectors (Custom 24h format, no browser truncation) */}
           <div className="grid grid-cols-2 gap-3.5">
-            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+            {/* Start Time Box */}
+            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
               <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
                 Từ (Giờ bắt đầu)
               </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xl font-black font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 text-center cursor-pointer"
-              />
+              <div className="flex items-center justify-center gap-1 bg-zinc-900 border border-zinc-700/80 rounded-xl p-1.5 focus-within:border-emerald-500 transition-colors">
+                <select
+                  value={startHour}
+                  onChange={(e) => setStartHour(e.target.value)}
+                  className="bg-transparent text-emerald-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                >
+                  {HOURS.map((h) => (
+                    <option key={h} value={h} className="bg-zinc-900 text-white font-mono">
+                      {h}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xl font-black text-emerald-500/60 font-mono">:</span>
+                <select
+                  value={startMinute}
+                  onChange={(e) => setStartMinute(e.target.value)}
+                  className="bg-transparent text-emerald-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                >
+                  {MINUTES.map((m) => (
+                    <option key={m} value={m} className="bg-zinc-900 text-white font-mono">
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+            {/* End Time Box */}
+            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
               <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
                 Đến (Giờ kết thúc)
               </label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xl font-black font-mono text-teal-400 focus:outline-none focus:border-emerald-500 text-center cursor-pointer"
-              />
+              <div className="flex items-center justify-center gap-1 bg-zinc-900 border border-zinc-700/80 rounded-xl p-1.5 focus-within:border-teal-500 transition-colors">
+                <select
+                  value={endHour}
+                  onChange={(e) => setEndHour(e.target.value)}
+                  className="bg-transparent text-teal-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                >
+                  {HOURS.map((h) => (
+                    <option key={h} value={h} className="bg-zinc-900 text-white font-mono">
+                      {h}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xl font-black text-teal-500/60 font-mono">:</span>
+                <select
+                  value={endMinute}
+                  onChange={(e) => setEndMinute(e.target.value)}
+                  className="bg-transparent text-teal-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                >
+                  {MINUTES.map((m) => (
+                    <option key={m} value={m} className="bg-zinc-900 text-white font-mono">
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -314,9 +369,9 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
               <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
                 Tính nhanh thời lượng
               </span>
-              {calculateDuration(startTime, endTime) && (
+              {calculateDuration() && (
                 <span className="text-xs text-emerald-400 font-bold font-mono">
-                  {calculateDuration(startTime, endTime)}
+                  {calculateDuration()}
                 </span>
               )}
             </div>
@@ -341,7 +396,7 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
           {/* Current Selection summary & Confirm Button */}
           <div className="pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
             <div className="text-xs text-zinc-300 truncate">
-              Đã chọn: <strong className="text-white font-mono text-sm">{startTime} - {endTime}</strong>
+              Đã chọn: <strong className="text-white font-mono text-sm">{startHour}:{startMinute} - {endHour}:{endMinute}</strong>
             </div>
             <button
               type="button"
