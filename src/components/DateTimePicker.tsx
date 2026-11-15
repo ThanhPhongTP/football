@@ -185,9 +185,17 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Custom start and duration
+  // Parse initial start and end time
   const [startTime, setStartTime] = useState('17:30');
-  const [durationMinutes, setDurationMinutes] = useState(90);
+  const [endTime, setEndTime] = useState('19:00');
+
+  useEffect(() => {
+    if (value && value.includes('-')) {
+      const parts = value.split('-').map((s) => s.trim());
+      if (parts[0]) setStartTime(parts[0]);
+      if (parts[1]) setEndTime(parts[1]);
+    }
+  }, [value, isOpen]);
 
   // Close on outside click
   useEffect(() => {
@@ -202,33 +210,33 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Common football time slots in Vietnam
-  const timePresets = [
-    { label: '16:30 - 18:00', desc: 'Chiều sớm (90p)' },
-    { label: '17:00 - 18:30', desc: 'Tan tầm (90p)' },
-    { label: '17:30 - 19:00', desc: 'Hoàng hôn (90p)' },
-    { label: '18:00 - 19:30', desc: 'Giờ vàng 1 (90p)' },
-    { label: '18:30 - 20:00', desc: 'Giờ vàng 2 (90p)' },
-    { label: '19:00 - 20:30', desc: 'Ca đẹp nhất (90p)' },
-    { label: '19:30 - 21:00', desc: 'Ca tối 1 (90p)' },
-    { label: '20:00 - 21:30', desc: 'Ca tối 2 (90p)' },
-    { label: '20:30 - 22:00', desc: 'Ca khuya (90p)' },
-  ];
-
-  const calculateEndTime = (start: string, duration: number) => {
-    const [h, m] = start.split(':').map(Number);
-    if (isNaN(h) || isNaN(m)) return start;
-    const totalMinutes = h * 60 + m + duration;
-    const endH = Math.floor(totalMinutes / 60) % 24;
-    const endM = totalMinutes % 60;
-    const endHStr = String(endH).padStart(2, '0');
-    const endMStr = String(endM).padStart(2, '0');
-    return `${start} - ${endHStr}:${endMStr}`;
+  // Calculate duration between start and end
+  const calculateDuration = (start: string, end: string) => {
+    const [h1, m1] = start.split(':').map(Number);
+    const [h2, m2] = end.split(':').map(Number);
+    if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return '';
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 24 * 60; // across midnight
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    if (hours === 0) return `${mins} phút`;
+    if (mins === 0) return `${hours} tiếng`;
+    return `${hours}h${mins > 0 ? `${mins}p` : ''} (${diff} phút)`;
   };
 
-  const handleApplyCustom = () => {
-    const slot = calculateEndTime(startTime, durationMinutes);
-    onChange(slot);
+  const setQuickDuration = (minutes: number) => {
+    const [h, m] = startTime.split(':').map(Number);
+    if (!isNaN(h) && !isNaN(m)) {
+      const total = h * 60 + m + minutes;
+      const endH = Math.floor(total / 60) % 24;
+      const endM = total % 60;
+      setEndTime(`${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`);
+    }
+  };
+
+  const handleConfirm = () => {
+    const formatted = `${startTime} - ${endTime}`;
+    onChange(formatted);
     setIsOpen(false);
   };
 
@@ -258,7 +266,7 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
 
       {/* Popup Dialog */}
       {isOpen && (
-        <div className="absolute top-full right-0 z-50 mt-2 w-full sm:w-[420px] bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-2xl animate-in fade-in zoom-in-95 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="absolute top-full right-0 z-50 mt-2 w-full sm:w-[380px] bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-2xl animate-in fade-in zoom-in-95 space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-emerald-400" />
@@ -267,88 +275,81 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Quick Football Presets */}
-          <div>
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block mb-2">
-              Các khung giờ bóng đá phổ biến
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {timePresets.map((preset) => {
-                const isSelected = value === preset.label;
-                return (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => {
-                      onChange(preset.label);
-                      setIsOpen(false);
-                    }}
-                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col justify-center items-center ${
-                      isSelected
-                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20'
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700'
-                    }`}
-                  >
-                    <span className="font-mono text-xs font-bold">{preset.label}</span>
-                    <span className={`text-[10px] ${isSelected ? 'text-zinc-900 font-semibold' : 'text-zinc-500'}`}>
-                      {preset.desc}
-                    </span>
-                  </button>
-                );
-              })}
+          {/* Time Picker Inputs */}
+          <div className="grid grid-cols-2 gap-3.5">
+            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
+                Từ (Giờ bắt đầu)
+              </label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xl font-black font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 text-center cursor-pointer"
+              />
+            </div>
+
+            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-1.5">
+              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
+                Đến (Giờ kết thúc)
+              </label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xl font-black font-mono text-teal-400 focus:outline-none focus:border-emerald-500 text-center cursor-pointer"
+              />
             </div>
           </div>
 
-          {/* Custom Time Selector */}
-          <div className="pt-3 border-t border-zinc-800 space-y-2.5">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
-              Hoặc tùy chỉnh giờ bắt đầu & thời lượng
-            </span>
-            <div className="grid grid-cols-2 gap-3 items-center">
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-1">Giờ bắt đầu</label>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-1">Thời lượng</label>
-                <div className="grid grid-cols-3 gap-1">
-                  {[60, 90, 120].map((mins) => (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => setDurationMinutes(mins)}
-                      className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
-                        durationMinutes === mins
-                          ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
-                          : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white'
-                      }`}
-                    >
-                      {mins}p
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Quick Duration Buttons (Optional helper) */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
+                Tính nhanh thời lượng
+              </span>
+              {calculateDuration(startTime, endTime) && (
+                <span className="text-xs text-emerald-400 font-bold font-mono">
+                  {calculateDuration(startTime, endTime)}
+                </span>
+              )}
             </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { mins: 60, label: '+60 phút' },
+                { mins: 90, label: '+90 phút' },
+                { mins: 120, label: '+120 phút' },
+              ].map((item) => (
+                <button
+                  key={item.mins}
+                  type="button"
+                  onClick={() => setQuickDuration(item.mins)}
+                  className="py-2 px-2 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer text-center"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
+          {/* Current Selection summary & Confirm Button */}
+          <div className="pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
+            <div className="text-xs text-zinc-300 truncate">
+              Đã chọn: <strong className="text-white font-mono text-sm">{startTime} - {endTime}</strong>
+            </div>
             <button
               type="button"
-              onClick={handleApplyCustom}
-              className="w-full py-2 px-3 rounded-xl bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              onClick={handleConfirm}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
             >
-              <span>Áp dụng ({calculateEndTime(startTime, durationMinutes)})</span>
-              <Check className="w-3.5 h-3.5" />
+              <span>Xác nhận</span>
+              <Check className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         </div>
@@ -356,3 +357,4 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
     </div>
   );
 }
+
