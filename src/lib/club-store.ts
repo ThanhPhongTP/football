@@ -23,11 +23,8 @@ export function useClubStore() {
       try {
         savedRoster = JSON.parse(rawRoster);
       } catch {
-        savedRoster = INITIAL_ROSTER;
+        savedRoster = [];
       }
-    } else {
-      savedRoster = INITIAL_ROSTER;
-      localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(savedRoster));
     }
     setRoster(savedRoster);
 
@@ -46,7 +43,7 @@ export function useClubStore() {
     fetch('/api/players')
       .then((res) => (res.ok ? res.json() : null))
       .then((cloudPlayers) => {
-        if (Array.isArray(cloudPlayers) && cloudPlayers.length > 0) {
+        if (Array.isArray(cloudPlayers)) {
           setRoster(cloudPlayers);
           localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(cloudPlayers));
         }

@@ -288,14 +288,7 @@ export async function getRoster(): Promise<Player[]> {
       if (!snap.empty) {
         return snap.docs.map((d) => d.data() as Player);
       }
-      // If collection empty in firestore, seed default roster
-      await initDefaultData();
-      if (memoryRoster.length > 0) {
-        for (const player of memoryRoster) {
-          await setDoc(doc(db, 'roster', player.id), player);
-        }
-        return memoryRoster;
-      }
+      return [];
     } catch (err) {
       console.warn('Firestore getRoster error:', err);
     }
@@ -334,6 +327,7 @@ export async function getMatches(): Promise<Match[]> {
         const list = snap.docs.map((d) => d.data() as Match);
         return list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
       }
+      return [];
     } catch (err) {
       console.warn('Firestore getMatches error:', err);
     }
