@@ -29,10 +29,57 @@ export default function CostSplitterPage() {
   const [otherFee, setOtherFee] = useState<number>(0);
   const [playerCount, setPlayerCount] = useState<number>(14);
 
-  const [bankName, setBankName] = useState('MB Bank');
-  const [bankAccount, setBankAccount] = useState('0987654321');
-  const [accountHolder, setAccountHolder] = useState('NGUYEN VAN A');
+  const [bankName, setBankName] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [accountHolder, setAccountHolder] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Load saved bank info from localStorage if exists
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('footdraw_bank_info');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.bankName) setBankName(parsed.bankName);
+          if (parsed.bankAccount) setBankAccount(parsed.bankAccount);
+          if (parsed.accountHolder) setAccountHolder(parsed.accountHolder);
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, []);
+
+  const handleBankNameChange = (val: string) => {
+    setBankName(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        'footdraw_bank_info',
+        JSON.stringify({ bankName: val, bankAccount, accountHolder })
+      );
+    }
+  };
+
+  const handleBankAccountChange = (val: string) => {
+    setBankAccount(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        'footdraw_bank_info',
+        JSON.stringify({ bankName, bankAccount: val, accountHolder })
+      );
+    }
+  };
+
+  const handleAccountHolderChange = (val: string) => {
+    setAccountHolder(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        'footdraw_bank_info',
+        JSON.stringify({ bankName, bankAccount, accountHolder: val })
+      );
+    }
+  };
 
   const handleSelectMatch = (mId: string) => {
     setSelectedMatchId(mId);
@@ -65,18 +112,19 @@ export default function CostSplitterPage() {
   )}`;
 
   const handleCopyZaloMessage = () => {
+    const hasBank = bankName || bankAccount || accountHolder;
+    const bankSection = hasBank
+      ? `──────────────────────
+${bankName ? `🏦 Ngân hàng: ${bankName}\n` : ''}${bankAccount ? `💳 Số tài khoản: ${bankAccount}\n` : ''}${accountHolder ? `👤 Chủ TK: ${accountHolder}\n` : ''}💬 Nội dung CK: [Tên của bạn] tien san`
+      : '';
+
     const text = `💵 THÔNG BÁO TIỀN SÂN BÓNG ĐÁ
 ──────────────────────
 • Tiền sân: ${formatVND(pitchFee)}
 • Tiền nước & đá: ${formatVND(waterFee)}
 ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng chi phí: ${formatVND(totalCost)} / ${playerCount} người
 
-👉 MỖI ANH EM: ${formatVND(costPerPerson)}
-──────────────────────
-🏦 Ngân hàng: ${bankName}
-💳 Số tài khoản: ${bankAccount}
-👤 Chủ TK: ${accountHolder}
-💬 Nội dung CK: [Tên của bạn] tien san`;
+👉 MỖI ANH EM: ${formatVND(costPerPerson)}${bankSection ? `\n${bankSection}` : ''}`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -225,8 +273,8 @@ ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng 
                       type="text"
                       disabled={!isAdmin}
                       value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      placeholder="VD: MB Bank, Vietcombank..."
+                      onChange={(e) => handleBankNameChange(e.target.value)}
+                      placeholder="VD: MB Bank, Vietcombank, Techcombank..."
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 disabled:opacity-70"
                     />
                   </div>
@@ -236,8 +284,8 @@ ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng 
                       type="text"
                       disabled={!isAdmin}
                       value={bankAccount}
-                      onChange={(e) => setBankAccount(e.target.value)}
-                      placeholder="VD: 0987654321"
+                      onChange={(e) => handleBankAccountChange(e.target.value)}
+                      placeholder="VD: 0388xxxxxx"
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 disabled:opacity-70"
                     />
                   </div>
@@ -249,7 +297,7 @@ ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng 
                     type="text"
                     disabled={!isAdmin}
                     value={accountHolder}
-                    onChange={(e) => setAccountHolder(e.target.value)}
+                    onChange={(e) => handleAccountHolderChange(e.target.value)}
                     placeholder="VD: NGUYEN VAN A"
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white uppercase focus:outline-none focus:border-emerald-500 disabled:opacity-70"
                   />
@@ -273,7 +321,7 @@ ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng 
                 </div>
 
                 {/* VietQR Code Display */}
-                {bankAccount && bankName && (
+                {bankAccount && bankName ? (
                   <div className="bg-white p-3 rounded-2xl inline-block mx-auto shadow-xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -282,6 +330,14 @@ ${otherFee > 0 ? `• Chi phí khác: ${formatVND(otherFee)}\n` : ''}• Tổng 
                       className="w-48 h-48 object-contain rounded-xl"
                     />
                     <p className="text-[10px] text-zinc-600 font-bold mt-1">Quét mã chuyển khoản tức thì</p>
+                  </div>
+                ) : (
+                  <div className="p-5 rounded-2xl bg-zinc-950/60 border border-dashed border-zinc-800 text-zinc-400 text-xs flex flex-col items-center justify-center gap-2 py-8">
+                    <QrCode className="w-10 h-10 text-zinc-600" />
+                    <span className="font-semibold text-zinc-300">Chưa có thông tin nhận chuyển khoản</span>
+                    <span className="text-[11px] text-zinc-500 max-w-xs text-center">
+                      Nhập Ngân hàng & Số tài khoản ở khung bên cạnh để tạo mã VietQR tự động
+                    </span>
                   </div>
                 )}
 

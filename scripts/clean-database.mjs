@@ -122,3 +122,4 @@ if (apiKey && projectId) {
 } else {
   console.log('⚠️ No Firebase credentials found in .env.local, skipped Cloud cleanup.');
 }
+
