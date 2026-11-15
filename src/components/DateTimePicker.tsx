@@ -96,27 +96,27 @@ export function DatePickerField({ value, onChange, label = 'Ngày thi đấu' }:
 
       {/* Popup Dialog */}
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-2 w-full sm:w-96 bg-zinc-900 border border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-2xl animate-in fade-in zoom-in-95 space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold text-white text-sm">Chọn ngày thi đấu</span>
+        <div className="absolute top-full left-0 z-50 mt-1.5 w-full sm:w-80 bg-zinc-900 border border-zinc-800 rounded-2xl p-3.5 shadow-2xl animate-in fade-in zoom-in-95 space-y-3">
+          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+            <div className="flex items-center gap-1.5">
+              <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-bold text-white text-xs">Chọn ngày thi đấu</span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+              className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Quick Select Days */}
           <div>
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block mb-2">
-              Gợi ý các ngày tới
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide block mb-1.5">
+              Các ngày gần nhất
             </span>
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {quickDays.map((item) => {
                 const isSelected = value === item.dateStr;
                 return (
@@ -127,14 +127,14 @@ export function DatePickerField({ value, onChange, label = 'Ngày thi đấu' }:
                       onChange(item.dateStr);
                       setIsOpen(false);
                     }}
-                    className={`p-2 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center ${
+                    className={`py-1.5 px-1 rounded-xl text-center border transition-all cursor-pointer flex flex-col items-center justify-center ${
                       isSelected
-                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold shadow-md shadow-emerald-500/20'
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700'
+                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold shadow-sm'
+                        : 'bg-zinc-950 border-zinc-800/80 text-zinc-300 hover:text-white hover:border-zinc-700'
                     }`}
                   >
-                    <span className="text-xs font-bold leading-tight truncate w-full">{item.label}</span>
-                    <span className={`text-[10px] ${isSelected ? 'text-zinc-900 font-semibold' : 'text-zinc-500'}`}>
+                    <span className="text-[11px] font-bold leading-tight truncate w-full">{item.label}</span>
+                    <span className={`text-[9px] ${isSelected ? 'text-zinc-950 font-semibold' : 'text-zinc-500'}`}>
                       {item.sub}
                     </span>
                   </button>
@@ -144,9 +144,9 @@ export function DatePickerField({ value, onChange, label = 'Ngày thi đấu' }:
           </div>
 
           {/* Calendar Native Picker */}
-          <div className="pt-3 border-t border-zinc-800">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block mb-1.5">
-              Hoặc chọn ngày khác từ lịch
+          <div className="pt-2 border-t border-zinc-800/80">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide block mb-1">
+              Hoặc chọn ngày từ lịch
             </span>
             <input
               type="date"
@@ -157,14 +157,14 @@ export function DatePickerField({ value, onChange, label = 'Ngày thi đấu' }:
                   setIsOpen(false);
                 }
               }}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
             />
           </div>
 
           {/* Current Selection summary */}
           {value && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 text-center">
-              <span className="text-xs text-emerald-400 font-medium">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-1.5 px-2 text-center">
+              <span className="text-[11px] text-emerald-400">
                 Đã chọn: <strong className="font-bold text-white">{formatDateDisplay(value)}</strong>
               </span>
             </div>
@@ -281,33 +281,31 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
 
       {/* Popup Dialog */}
       {isOpen && (
-        <div className="absolute top-full right-0 z-50 mt-2 w-full sm:w-[380px] bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-2xl animate-in fade-in zoom-in-95 space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold text-white text-sm">Chọn khung giờ thi đấu</span>
+        <div className="absolute top-full right-0 z-50 mt-1.5 w-full sm:w-[310px] bg-zinc-900 border border-zinc-800 rounded-2xl p-3.5 shadow-2xl animate-in fade-in zoom-in-95 space-y-3">
+          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-bold text-white text-xs">Chọn khung giờ thi đấu</span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
               className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {/* Time Picker Selectors (Custom 24h format, no browser truncation) */}
-          <div className="grid grid-cols-2 gap-3.5">
-            {/* Start Time Box */}
-            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
-              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
-                Từ (Giờ bắt đầu)
-              </label>
-              <div className="flex items-center justify-center gap-1 bg-zinc-900 border border-zinc-700/80 rounded-xl p-1.5 focus-within:border-emerald-500 transition-colors">
+          {/* Time Picker Selectors (Compact side-by-side) */}
+          <div className="flex items-center justify-between gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800/80">
+            {/* Start */}
+            <div className="flex-1 text-center">
+              <span className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Bắt đầu</span>
+              <div className="flex items-center justify-center gap-0.5 bg-zinc-900 border border-zinc-700/80 rounded-lg px-2 py-1">
                 <select
                   value={startHour}
                   onChange={(e) => setStartHour(e.target.value)}
-                  className="bg-transparent text-emerald-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                  className="bg-transparent text-emerald-400 font-mono font-bold text-base focus:outline-none cursor-pointer"
                 >
                   {HOURS.map((h) => (
                     <option key={h} value={h} className="bg-zinc-900 text-white font-mono">
@@ -315,11 +313,11 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
                     </option>
                   ))}
                 </select>
-                <span className="text-xl font-black text-emerald-500/60 font-mono">:</span>
+                <span className="text-emerald-500/60 font-mono font-bold">:</span>
                 <select
                   value={startMinute}
                   onChange={(e) => setStartMinute(e.target.value)}
-                  className="bg-transparent text-emerald-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                  className="bg-transparent text-emerald-400 font-mono font-bold text-base focus:outline-none cursor-pointer"
                 >
                   {MINUTES.map((m) => (
                     <option key={m} value={m} className="bg-zinc-900 text-white font-mono">
@@ -330,16 +328,16 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
               </div>
             </div>
 
-            {/* End Time Box */}
-            <div className="bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800 space-y-2">
-              <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide block">
-                Đến (Giờ kết thúc)
-              </label>
-              <div className="flex items-center justify-center gap-1 bg-zinc-900 border border-zinc-700/80 rounded-xl p-1.5 focus-within:border-teal-500 transition-colors">
+            <span className="text-zinc-600 font-bold mt-4">➔</span>
+
+            {/* End */}
+            <div className="flex-1 text-center">
+              <span className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">Kết thúc</span>
+              <div className="flex items-center justify-center gap-0.5 bg-zinc-900 border border-zinc-700/80 rounded-lg px-2 py-1">
                 <select
                   value={endHour}
                   onChange={(e) => setEndHour(e.target.value)}
-                  className="bg-transparent text-teal-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                  className="bg-transparent text-teal-400 font-mono font-bold text-base focus:outline-none cursor-pointer"
                 >
                   {HOURS.map((h) => (
                     <option key={h} value={h} className="bg-zinc-900 text-white font-mono">
@@ -347,11 +345,11 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
                     </option>
                   ))}
                 </select>
-                <span className="text-xl font-black text-teal-500/60 font-mono">:</span>
+                <span className="text-teal-500/60 font-mono font-bold">:</span>
                 <select
                   value={endMinute}
                   onChange={(e) => setEndMinute(e.target.value)}
-                  className="bg-transparent text-teal-400 font-mono font-black text-xl text-center focus:outline-none cursor-pointer px-1 py-1"
+                  className="bg-transparent text-teal-400 font-mono font-bold text-base focus:outline-none cursor-pointer"
                 >
                   {MINUTES.map((m) => (
                     <option key={m} value={m} className="bg-zinc-900 text-white font-mono">
@@ -364,47 +362,38 @@ export function TimePickerField({ value, onChange, label = 'Khung giờ thi đ�
           </div>
 
           {/* Quick Duration Buttons (Optional helper) */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wide">
-                Tính nhanh thời lượng
-              </span>
-              {calculateDuration() && (
-                <span className="text-xs text-emerald-400 font-bold font-mono">
-                  {calculateDuration()}
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { mins: 60, label: '+60 phút' },
-                { mins: 90, label: '+90 phút' },
-                { mins: 120, label: '+120 phút' },
-              ].map((item) => (
+          <div className="flex items-center justify-between text-xs px-0.5">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-zinc-500 font-medium">Cộng nhanh:</span>
+              {[60, 90, 120].map((mins) => (
                 <button
-                  key={item.mins}
+                  key={mins}
                   type="button"
-                  onClick={() => setQuickDuration(item.mins)}
-                  className="py-2 px-2 rounded-xl text-xs font-bold bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer text-center"
+                  onClick={() => setQuickDuration(mins)}
+                  className="py-0.5 px-2 rounded-md text-[10px] font-bold bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
                 >
-                  {item.label}
+                  +{mins}p
                 </button>
               ))}
             </div>
+            {calculateDuration() && (
+              <span className="text-[11px] text-emerald-400 font-bold font-mono">
+                {calculateDuration()}
+              </span>
+            )}
           </div>
 
           {/* Current Selection summary & Confirm Button */}
-          <div className="pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
-            <div className="text-xs text-zinc-300 truncate">
-              Đã chọn: <strong className="text-white font-mono text-sm">{startHour}:{startMinute} - {endHour}:{endMinute}</strong>
+          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-2">
+            <div className="text-[11px] text-zinc-400 truncate">
+              Đã chọn: <strong className="text-white font-mono">{startHour}:{startMinute} - {endHour}:{endMinute}</strong>
             </div>
             <button
               type="button"
               onClick={handleConfirm}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer shrink-0"
+              className="px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-sm transition-all cursor-pointer shrink-0"
             >
-              <span>Xác nhận</span>
-              <Check className="w-4 h-4 stroke-[2.5]" />
+              Xác nhận
             </button>
           </div>
         </div>
